@@ -598,7 +598,6 @@ class UnfusedQudit(dtype):
             self.__name="Qudit_"+str(Qudit.apriori_count)
 
         UnfusedQudit.namespace.add(self.__name)
-        self.__value=np.array(value)
         
         entropy=0
         super().__init__(f"UnfusedQudit{N}",True,True,True,True,True,{None},entropy=entropy)
