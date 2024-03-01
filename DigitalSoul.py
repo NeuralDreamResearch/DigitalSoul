@@ -4,13 +4,14 @@ import numpy as np
 import re
 import sys
 import math
-import networkx as nxp
+#import networkx as nxp
 from scipy.special import expn
 try:
     import tensorflow as tf
     print("Tensorflow is available")
 except:
     print("Tensorflow is skipped")
+    tf=np
 try:
     import qiskit
     print("Classical&Quantum Resources are available. Eager executor can access both.")
@@ -22,12 +23,12 @@ except:
     print("Classical Resources are available")
     
 try:
-    #import cupy as cp
+    import cupy as cp
     print("GPU resources are available. Eager executor can access it.")
-    cp=np
+
 except:
     print("GPU resources are not available")
-
+    cp=np
 class VHDL_Factory(object):
     preset="""
     ----------------------------------------------------------------------------------
@@ -484,8 +485,8 @@ class Qudit(dtype):
         
         
         if type(N)!=int:
-            raise TypeError("N must be an integer")
-        
+            raise TypeError("N must be an integer")     
+
         if(isinstance(value,str)):
             if value=="0":
                 value=np.zeros((N,))
@@ -493,7 +494,14 @@ class Qudit(dtype):
             elif value=="H":
                 value=np.full((N,),(1/N)**.5)
             else:
-                raise ValueError("Invalid initial state description")
+                try:
+                    a=int(value)
+                    if a>=N or a<0:
+                        raise ValueError("Numeral state descriptor is invalid")
+                    value=np.zeros((N,))
+                    value[a]=1.
+                except:   
+                    raise ValueError("Invalid initial state description")
         elif(isinstance(value, Int)):
             N=value.depth
             a=value.value
@@ -575,9 +583,12 @@ class Qudit(dtype):
         if abs(sums-1) > self.__normalizer_error:
             raise ValueError(f"State of {self.__N}-dimensional Qudit must be normalized to 1")
         return True
-
+    
+    @property
+    def num_levels(self):
+        return self.__N
    
-class UnfusedQudit(dtype):
+class NontangledQudit(dtype):
     count=0
     apriori_count=0
     namespace=set()
@@ -586,23 +597,57 @@ class UnfusedQudit(dtype):
         #Implement here class assets
         if(not isinstance(qudit_cluster, dict)):
             raise TypeError("qudit_cluser must be a dictionary, where keys are positions and values must be qudits correspond that position")
-        if name in UnfusedQudit.namespace:raise ValueError(f"name={name} of the UnfusedQudit is used previously. Pick another name")
-        if not (name==None or type(name)==str):raise TypeError("name of the UnfusedQudit is either a string or None")
+        
+    
+        is_start_descriptor=True
+        descriptor_type=None
+
+        N=0
+        for descriptor in qudit_cluster:
+            if not is_start_descriptor:
+                if descriptor_type!=type(descriptor):
+                    raise ValueError("Invalid  Descriptor Type in UntangledQubits")
+            else:
+                descriptor_type=type(descriptor)
+                is_start_descriptor=False
+            
+            if descriptor_type==int:
+                N+=qudit_cluster[descriptor].num_levels
+
+            elif descriptor_type==tuple:
+                N+=len(descriptor)
+
+        check_array=np.full(N,False, dtype=bool)
+
+        if descriptor_type==int:
+            for descriptor in qudit_cluster:
+                if N>descriptor>=0:
+                    for i in range(0, qudit_cluster[descriptor].num_levels):
+                        if check_array[descriptor+i]==False:
+                            check_array[descriptor+i]=True
+                        else:
+                            raise ValueError(f"Qudit cluster has multiple values in index-{descriptor+i}")
+                else:
+                    raise ValueError(f"Invalid descriptor {descriptor})
+        if name in NontangledQudit.namespace:raise ValueError(f"name={name} of the NontangledQudit is used previously. Pick another name")
+        if not (name==None or type(name)==str):raise TypeError("name of the NontangledQudit is either a string or None")
         if name:
             self.__name=name
-            UnfusedQudit.count+=1
+            NontangledQudit.count+=1
             
         else:
-            UnfusedQudit.count+=1
-            UnfusedQudit.apriori_count+=1
+            NontangledQudit.count+=1
+            NontangledQudit.apriori_count+=1
             self.__name="Qudit_"+str(Qudit.apriori_count)
 
-        UnfusedQudit.namespace.add(self.__name)
+        NontangledQudit.namespace.add(self.__name)
         
+        self.__N=N
         entropy=0
-        super().__init__(f"UnfusedQudit{N}",True,True,True,True,True,{None},entropy=entropy)
+        super().__init__(f"NontangledQudit{N}",True,True,True,True,True,{None},entropy=entropy)
         
-
+    @property
+    def num_levels(self): return self.__N
 
 class Float(dtype):
     count=0
@@ -1026,6 +1071,8 @@ class ScalarDivide(Node):
         ScalarDivide.count+=1
 
 
+
+
 """
 a1=Int(2)
 b1=Int(7)
@@ -1042,4 +1089,25 @@ n1=Node((a,b),c,"add",ops={"cpu":lambda a,b:np.add(a,b), "gpu":lambda a,b: cp.ad
 n2=Node((d,a),e,"subtract", ops={"cpu": lambda a,b:np.subtract(a,b), "gpu": lambda a,b: cp.subtract(a,b), "vhdl":lambda a,b:f"{a} + {b}"})
 n3=Node((a,b,d),f,"fma",ops={"cpu": lambda a,b,c:np.add(a,np.multiply(b,c))})
 n4=ScalarDivide((a,b), c)
-print(n1("cpu"),n2("gpu"), n4("tf").numpy())"""
+print(n1("cpu"),n2("gpu"), n4("tf"))#.numpy())"""
+
+"""
+import DigitalSoul
+
+gate0=DigitalSoul.Qudit("3", 4)
+gate1=DigitalSoul.Qudit("2",4)
+gate2=DigitalSoul.Qudit("0",4)
+#print(gate0,"\n",gate1,"\n",gate2)
+
+scheme={(0,1,2,3):gate0, (4,5,6,7):gate1, (8,9,10,11):gate2}
+scheme_linear={0:gate0, 4:gate1, 8:gate2}
+
+
+print(scheme)
+print(scheme_linear)
+for i in scheme_linear:
+    print(i,scheme_linear[i])
+
+ug0=DigitalSoul.NontangledQudit(scheme)
+print(ug0.num_levels, gate0.num_levels)
+"""
