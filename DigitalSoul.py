@@ -606,7 +606,7 @@ class NontangledQudit(dtype):
         for descriptor in qudit_cluster:
             if not is_start_descriptor:
                 if descriptor_type!=type(descriptor):
-                    raise ValueError("Invalid  Descriptor Type in UntangledQubits")
+                    raise ValueError("Invalid  Descriptor Type NontangledQubits")
             else:
                 descriptor_type=type(descriptor)
                 is_start_descriptor=False
@@ -618,17 +618,31 @@ class NontangledQudit(dtype):
                 N+=len(descriptor)
 
         check_array=np.full(N,False, dtype=bool)
-
+        qudit_cluster__={}
         if descriptor_type==int:
             for descriptor in qudit_cluster:
                 if N>descriptor>=0:
                     for i in range(0, qudit_cluster[descriptor].num_levels):
+                        qudit_cluster__[tuple([j for j in range(descriptor, descriptor+qudit_cluster[descriptor].num_levels)])]=qudit_cluster[descriptor]
                         if check_array[descriptor+i]==False:
                             check_array[descriptor+i]=True
                         else:
                             raise ValueError(f"Qudit cluster has multiple values in index-{descriptor+i}")
                 else:
-                    raise ValueError(f"Invalid descriptor {descriptor})
+                    raise ValueError(f"Invalid descriptor {descriptor}")
+
+            qudit_cluster=qudit_cluster__
+            
+        elif descriptor_type==tuple:
+            for descriptor in qudit_cluster:
+                for i in descriptor:
+                    if check_array[i]==False:
+                        check_array[i]=True
+                    else:
+                        raise ValueError(f"Qudit cluster has multiple values in index-{i}")
+        
+
+        if not np.all(check_array): raise ValueError("Qudit Cluster doesn't span all indices")
         if name in NontangledQudit.namespace:raise ValueError(f"name={name} of the NontangledQudit is used previously. Pick another name")
         if not (name==None or type(name)==str):raise TypeError("name of the NontangledQudit is either a string or None")
         if name:
@@ -641,13 +655,16 @@ class NontangledQudit(dtype):
             self.__name="Qudit_"+str(Qudit.apriori_count)
 
         NontangledQudit.namespace.add(self.__name)
-        
+        self.__cluster=qudit_cluster
         self.__N=N
         entropy=0
         super().__init__(f"NontangledQudit{N}",True,True,True,True,True,{None},entropy=entropy)
         
     @property
     def num_levels(self): return self.__N
+    @property
+    def value(self):return self.__cluster
+    def __repr__(self): return f"{self.num_levels}-levels Unentangled Qudit {self.__cluster}"
 
 class Float(dtype):
     count=0
@@ -1019,6 +1036,78 @@ class Node(object):
             terminal.sculk.set_value(result)
         return result
 
+class QuantumGate(object):
+    count=0
+    def __init__(self,data,utol=1e-8):
+        if not isinstance(data, (np.ndarray,list, tuple)):
+            raise TypeError("data should be an array")
+        data=np.array(data)
+        if len(data.shape)!=2 or data.shape[0]!=data.shape[1]:
+            raise ValueError("data should be a square matrix")
+
+        if not np.allclose(np.dot(data, data.conj().T), np.eye(data.shape[0]), utol):
+            raise ValueError("data should be a unitary matrix. Either adjust data or utol(unitary tolerance)")
+        self.__data=data
+        QuantumGate.count+=1
+    
+    def __repr__(self):
+        return f"QuantumGate with {self.__data.shape[0]}-levels"        
+        
+    def operate(self, statevec):
+        if not isinstance(statevec, Qudit):
+            raise TypeError("invalid operand type")
+
+        if not self.__data.shape[0]-statevec.num_levels==0:
+            raise ValueError("invalid operand shape")
+
+        statevec.set_value(np.dot(self.__data, statevec.value))
+
+    @property
+    def data(self): return self.__data
+
+    def set_data(self,data,utol): 
+        if not isinstance(data, (np.ndarray,list, tuple)):
+            raise TypeError("data should be an array")
+        data=np.array(data)
+        if len(data.shape)!=2 or data.shape[0]!=data.shape[1]:
+            raise ValueError("data should be a square matrix")
+        if not np.allclose(np.dot(data, data.conj().T), np.eye(data.shape[0]), utol):
+            raise ValueError("data should be a unitary matrix. Either adjust data or utol(unitary tolerance)")
+        self.__data=data
+
+    @property
+    def num_levels(self): return self.__data.shape[0]
+
+class NontangledGate(object):
+    count=0
+    def __init__(self, gate_cluster, utol=1e-8):
+        if not isinstance(gate_cluster, dict):
+            raise TypeError("gate_cluster should be a dictionary which keys are positions and values are QuantumGate")
+        
+        self.__N=0
+        for a in gate_cluster.values():
+            self.__N+=a.num_levels
+        check=np.full(self.__N, False)
+        for descriptor in gate_cluster.keys():
+            if type(descriptor)==int:
+                __=descriptor+gate_cluster[descriptor].num_levels
+                if 0<=descriptor<self.__N and 0<=__<self.__N:
+                    if np.all(check[descriptor:__ ]==False):
+                        check[descriptor:__ ]=True
+                    else:
+                        raise ValueError(f"NontangledGate indices coindices with indices [{descriptor}:{__}]")
+                else:
+                    raise ValueError("Invalid Gate indices. NontangledGate doesn't span the gate all across")
+            if isinstance(descriptor,(tuple, list, np.ndarray)):
+                for i in descriptor:
+                    if check[i]:
+                        raise ValueError(f"NontangledGate index coincides with index {i}")
+                    else:
+                        check[i]=True
+        if np.all(check==True):
+            raise ValueError("NontangledGate is not created correctly, some indices are not spanned:"+str(np.where(a==False)))
+        
+    
 
 class ScalarAdd(Node):
     count=0
@@ -1090,24 +1179,3 @@ n2=Node((d,a),e,"subtract", ops={"cpu": lambda a,b:np.subtract(a,b), "gpu": lamb
 n3=Node((a,b,d),f,"fma",ops={"cpu": lambda a,b,c:np.add(a,np.multiply(b,c))})
 n4=ScalarDivide((a,b), c)
 print(n1("cpu"),n2("gpu"), n4("tf"))#.numpy())"""
-
-"""
-import DigitalSoul
-
-gate0=DigitalSoul.Qudit("3", 4)
-gate1=DigitalSoul.Qudit("2",4)
-gate2=DigitalSoul.Qudit("0",4)
-#print(gate0,"\n",gate1,"\n",gate2)
-
-scheme={(0,1,2,3):gate0, (4,5,6,7):gate1, (8,9,10,11):gate2}
-scheme_linear={0:gate0, 4:gate1, 8:gate2}
-
-
-print(scheme)
-print(scheme_linear)
-for i in scheme_linear:
-    print(i,scheme_linear[i])
-
-ug0=DigitalSoul.NontangledQudit(scheme)
-print(ug0.num_levels, gate0.num_levels)
-"""
