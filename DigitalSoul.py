@@ -1091,23 +1091,40 @@ class NontangledGate(object):
         for descriptor in gate_cluster.keys():
             if type(descriptor)==int:
                 __=descriptor+gate_cluster[descriptor].num_levels
-                if 0<=descriptor<self.__N and 0<=__<self.__N:
+                if 0<=descriptor<self.__N and 0<=__-1<self.__N:
                     if np.all(check[descriptor:__ ]==False):
                         check[descriptor:__ ]=True
                     else:
                         raise ValueError(f"NontangledGate indices coindices with indices [{descriptor}:{__}]")
                 else:
                     raise ValueError("Invalid Gate indices. NontangledGate doesn't span the gate all across")
-            if isinstance(descriptor,(tuple, list, np.ndarray)):
+            elif isinstance(descriptor,(tuple, list, np.ndarray)):
+                if len(descriptor)!=gate_cluster[descriptor].num_levels:raise ValueError(f"Invalid descriptor for gate. Number of indices and levels don't match: {descriptor} {gate_cluster[descriptor]}")
                 for i in descriptor:
-                    if check[i]:
-                        raise ValueError(f"NontangledGate index coincides with index {i}")
-                    else:
-                        check[i]=True
-        if np.all(check==True):
+                    if not(0<=i<self.__N): raise ValueError(f"Descriptor index {i} is out of bounds of NontangledGate")
+                    if check[i]:raise ValueError(f"NontangledGate index coincides with index {i}")
+                    check[i]=True
+
+        if not np.all(check==True):
             raise ValueError("NontangledGate is not created correctly, some indices are not spanned:"+str(np.where(a==False)))
         
+        self.__scheme=gate_cluster
     
+    @property
+    def num_levels(self): return self.__N
+
+    def __repr__(self):
+        return f"Nontangled Quantum Gate:{self.__N}-level: {self.__scheme}"
+
+    @property
+    def gate_cluster(self): return self.__scheme
+
+    def set_gate_from_descriptor(self, index, new_gate):
+        if index in self.__scheme:
+            if self.__scheme[index].num_levels==new_gate.num_levels:
+                self.__scheme[index]=new_gate
+            else: raise ValueError(f"Old gate and new gate don't have same number of levels")
+        else: raise ValueError(f"Invalid index")    
 
 class ScalarAdd(Node):
     count=0
