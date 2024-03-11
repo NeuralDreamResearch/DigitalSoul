@@ -217,6 +217,8 @@ class ArrayHolder(object):
 class Edge(object):
     count=0
     def __init__(self,sculk):
+        if not isinstance(sculk,(Bool, Int, UInt, Float, Qudit, ArrayHolder)):
+            raise TypeError("sculk must be a Bool, Int, UInt, Float, Qudit or ArrayHolder")
         self.sculk=sculk
         self.__c=0
         Edge.count+=1
@@ -229,4 +231,17 @@ class Edge(object):
                 return f"{self.sculk.name}:std_logic:='0'"
             elif self.sculk.value==1:
                 return f"{self.sculk.name}:std_logic:='1'"
+        elif type(self.sculk)==UInt:
+            if self.sculk.value==None: return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):='"+self.sculk.depth*"X"+"'"
+            else:
+                a=bin(self.sculk.value)[2:]
+                return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):='"+(self.sculk.depth-len(a))*"0"+a+"'"
+        elif type(self.sculk)==Int:
+            if self.sculk.value==None: return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):='"+self.sculk.depth*"X"+"'"
+            elif self.sculk.value>0:
+                a=bin(self.sculk.value)
+                return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):='"+(self.sculk.depth-len(a))*"0"+a+"'"
+                
+            
+
         
