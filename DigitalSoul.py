@@ -101,7 +101,7 @@ class UInt:
   
 class Float:
     count=0
-    def __init__(self, value, exponent=8, mantissa=23 ):
+    def __init__(self, value=None, exponent=8, mantissa=23 ):
         self.depth=1+mantissa+exponent
         self.__exponent=exponent
         self.__mantissa=mantissa
@@ -176,7 +176,7 @@ class Qudit:
     def __repr__(self):
         return f"{self.name} value={self.value} entropy={self.entropy}"
 
-class ArrayHolder(object):
+class Tensor(object):
     count=0
     def __init__(self, value, dtype=Float(0), shape=(1,)):
         if not isinstance(value, (np.ndarray,tuple, list)):
@@ -194,8 +194,9 @@ class ArrayHolder(object):
         if not isinstance(dtype, (Bool, Int, UInt, Float, Qudit)):
             raise TypeError("dtye should be one of them (Bool, Int, UInt, Float, Qudit)")
         self.dtype=dtype
-        self.__c=ArrayHolder.count
-        ArrayHolder.count+=1
+        self.__c=Tensor.count
+        Tensor.count+=1
+        self.predecessor=None
 
     @property
     def entropy(self):
@@ -206,21 +207,25 @@ class ArrayHolder(object):
 
     def __repr__(self):
         if type(self.value)!=np.ndarray:
-            return f"ArrayHolder_{self.__c}: array of {repr(self.dtype)[:repr(self.dtype).index(' ')]} shape={self.shape} entropy={self.entropy}"
+            return f"Tensor_{self.__c}: array of {repr(self.dtype)[:repr(self.dtype).index(' ')]} shape={self.shape} entropy={self.entropy}"
         else:
-            return f"ArrayHolder_{self.__c}: array of {repr(self.dtype)[:repr(self.dtype).index(' ')]} shape={self.value.shape} entropy={self.entropy}"
+            return f"Tensor_{self.__c}: array of {repr(self.dtype)[:repr(self.dtype).index(' ')]} shape={self.value.shape} entropy={self.entropy}"
     @property
-    def name(self): return f"ArrayHolder_{self.__c}"
+    def name(self): return f"Tensor_{self.__c}"
+    
+    
+    
+    
     
             
                 
 class Edge(object):
     count=0
     def __init__(self,sculk):
-        if not isinstance(sculk,(Bool, Int, UInt, Float, Qudit, ArrayHolder)):
-            raise TypeError("sculk must be a Bool, Int, UInt, Float, Qudit or ArrayHolder")
+        if not isinstance(sculk,(Bool, Int, UInt, Float, Qudit, Tensor)):
+            raise TypeError("sculk must be a Bool, Int, UInt, Float, Qudit or Tensor")
         self.sculk=sculk
-        self.__c=0
+        self.__c=Edge.count
         Edge.count+=1
 
     def vhdl(self):
@@ -241,7 +246,56 @@ class Edge(object):
             elif self.sculk.value>0:
                 a=bin(self.sculk.value)
                 return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):='"+(self.sculk.depth-len(a))*"0"+a+"'"
-                
-            
+                       
+    @property
+    def name(self): return f"Edge_{self.__c}"
+    def __repr__(self):return f"{self.name} holding {self.sculk}"
+    @property
+    def entropy(self):return self.sculk.entropy
+    def set_predecessor(self,node):self.predecessor=node
+    def unpack(self,executor="np"):
+        if self.sculk.value==None:
+            self.predecessor.execute(executor)
+        else:
+            return self.sculk.value
 
+class Node(object):
+    count=0
+    def __init__(self, in_terminals, out_terminals, ops={"np":None, "cp":None, "tf":None, "vhdl":None,"qc":None}):
+        if Edge in type(in_terminals).mro():
+            in_terminals=(in_terminals,)
+        elif isinstance(in_terminals,(tuple,list, np.ndarray)):
+            for terminal in in_terminals:
+                if not Edge in type(terminal).mro():
+                    raise TypeError("each element of in_terminals must be an Edge or inherited from Edge")
+        else: raise TypeError("in_terminals should be composed of Edge")
+        
+        if Edge in type(out_terminals).mro():
+            out_terminals=(out_terminals,)
+        elif isinstance(out_terminals,(tuple,list, np.ndarray)):
+            for terminal in out_terminals:
+                if not Edge in type(terminal).mro():
+                    raise TypeError("each element of out_terminals must be an Edge or inherited from Edge")
+        else: raise TypeError("out_terminals should be composed of Edge or inherited from Edge")
+        
+        self.__in_terminals=in_terminals
+        self.__out_terminals=out_terminals
+        self.__contemplate=None
+        for terminal in out_terminals:
+            terminal.set_predecessor(self)
+        
+        self.__c=Node.count
+        Node.count+=1
+        self.__ops=ops
+        
+    def execute(self,executor="np"):
+        __=[i.unpack(executor) for i in self.__in_terminals]
+        self.__contemplate=self.__ops[executor](*[i.unpack(executor) for i in self.__in_terminals])
+        for i in range(len(self.__out_terminals)):
+            self.__out_terminals[i].sculk.value=self.__contemplate[i]
+        
+        
+        
+        
+        
         
