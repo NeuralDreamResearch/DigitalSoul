@@ -176,6 +176,47 @@ class Qudit:
     def __repr__(self):
         return f"{self.name} value={self.value} entropy={self.entropy}"
 
+class QuantumGate(object):
+    count=0
+    def __init__(self,data,utol=1e-8):
+        if not isinstance(data, (np.ndarray,list, tuple)):
+            raise TypeError("data should be an array")
+        data=np.array(data)
+        if len(data.shape)!=2 or data.shape[0]!=data.shape[1]:
+            raise ValueError("data should be a square matrix")
+
+        if not np.allclose(np.dot(data, data.conj().T), np.eye(data.shape[0]), utol):
+            raise ValueError("data should be a unitary matrix. Either adjust data or utol(unitary tolerance)")
+        self.__data=data
+        self.__c=QuantumGate.count
+        QuantumGate.count+=1
+    
+    def __repr__(self):
+        return f"QuantumGate with {self.__data.shape[0]}-levels"        
+
+    @property
+    def data(self): return self.__data
+    
+    @property
+    def value(self): return self.__data
+
+    def set_data(self,data,utol): 
+        if not isinstance(data, (np.ndarray,list, tuple)):
+            raise TypeError("data should be an array")
+        data=np.array(data)
+        if len(data.shape)!=2 or data.shape[0]!=data.shape[1]:
+            raise ValueError("data should be a square matrix")
+        if not np.allclose(np.dot(data, data.conj().T), np.eye(data.shape[0]), utol):
+            raise ValueError("data should be a unitary matrix. Either adjust data or utol(unitary tolerance)")
+        self.__data=data
+
+    @property
+    def num_levels(self): return self.__data.shape[0]
+    @property
+    def entropy(self):return 0
+    @property
+    def name(self):return f"QuantumGate_{self.__c}"
+ 
 class Tensor(object):
     count=0
     def __init__(self, value, dtype=Float(0), shape=(1,)):
@@ -293,9 +334,80 @@ class Node(object):
         self.__contemplate=self.__ops[executor](*[i.unpack(executor) for i in self.__in_terminals])
         for i in range(len(self.__out_terminals)):
             self.__out_terminals[i].sculk.value=self.__contemplate[i]
+            
+    def transpile(self, target="vhdl", visited=None):
+        if visited is None:
+            visited = set()  # Keep track of visited nodes to prevent infinite recursion
+
+        if self in visited: 
+            return ""  # Already transpiled 
+        
+        visited.add(self)
+        # Entity Declaration
+        entity_name = f"Node_{self.__c}"
+        entity_decl = f"entity {entity_name} is\n  port (\n"
+
+        # Input port declarations
+        for in_terminal in self.__in_terminals:
+            entity_decl += f"    {in_terminal.name} : in std_logic;\n"
+
+        # Output port declarations
+        for out_terminal in self.__out_terminals:
+            entity_decl += f"    {out_terminal.name} : out std_logic;\n"
+
+        entity_decl += ");\nend entity;\n\n" 
+
+        # Architecture Declaration
+        arch_name = f"{entity_name}_arch"
+        arch_decl = f"architecture behavioral of {entity_name} is\n"
+
+        # Signal declarations for edges
+        arch_decl += "  signal " + ", ".join([e.name for e in self.__in_terminals + self.__out_terminals]) + " : std_logic;\n"
+
+        arch_decl += "begin\n"
+
+        # Generate VHDL code based on operation type
+        if self.__ops[target] is not None:
+            operation_vhdl = self.__ops[target](*[i.name for i in self.__in_terminals])
+        else:  
+            raise NotImplementedError(f"Transpilation for target '{target}' is not supported for Node type: {type(self)}")
+
+        arch_decl += f"  {operation_vhdl}\n"
+        arch_decl += "end architecture;\n"
+        
+        #  Recursively transpile input dependencies
+        for in_terminal in self.__in_terminals:
+            upstream_node = in_terminal.predecessor
+            arch_decl += upstream_node.transpile(target, visited)
+
+        return entity_decl + arch_decl
         
         
         
+class LogicalAnd(Node):
+    count=0
+    def __init__(self, in_terminals, out_terminals):
         
+        super().__init__(in_terminals, out_terminals, ops={
+            "np": lambda a,b:(np.logical_and(a,b),),
+            "cp":lambda a,b:(cp.logical_and(a,b),),
+            "tf":lambda a,b:(tf.logical_and(a,b),),
+            "vhdl":(lambda a,b: f"{out_terminals.name}<={a} and {b};")
+        })
+        self.__c=LogicalAnd.count
+        LogicalAnd.count+=1
+        
+class LogicalOr(Node):
+    count=0
+    def __init__(self, in_terminals, out_terminals):
+        
+        super().__init__(in_terminals, out_terminals, ops={
+            "np": lambda a,b:(np.logical_or(a,b),),
+            "cp":lambda a,b:(cp.logical_or(a,b),),
+            "tf":lambda a,b:(tf.logical_or(a,b),),
+            "vhdl":(lambda a,b: f"{out_terminals.name}<={a} or {b};")
+        })
+        self.__c=LogicalOr.count
+        LogicalOr.count+=1        
         
         
