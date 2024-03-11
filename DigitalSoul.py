@@ -408,6 +408,35 @@ class LogicalOr(Node):
             "vhdl":(lambda a,b: f"{out_terminals.name}<={a} or {b};")
         })
         self.__c=LogicalOr.count
-        LogicalOr.count+=1        
-        
-        
+        LogicalOr.count+=1  
+
+"""
+import DigitalSoul as ds
+
+in1=ds.Bool(False)
+in2=ds.Bool(True)
+in3=ds.Bool(None)
+in4=ds.Bool(True)
+in5=ds.Bool(None)
+
+e1=ds.Edge(in1)
+e2=ds.Edge(in2)
+e3=ds.Edge(in3)
+e4=ds.Edge(in4)
+e5=ds.Edge(in5)
+e6=ds.Edge(ds.Bool(False))
+e7=ds.Edge(ds.Bool(None))
+
+print("\n"*7)
+or_gate=ds.LogicalOr((e1,e2), e3)
+or_gate=ds.LogicalOr((e3,e4), e5)
+and_gate1=ds.LogicalAnd((e5,e6), e7)
+print(e7)
+print("Executing function")
+print(and_gate1.transpile("vhdl"))
+and_gate1.execute("np")
+
+print(e7)
+
+
+"""
