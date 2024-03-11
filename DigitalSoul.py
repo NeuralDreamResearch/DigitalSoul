@@ -77,7 +77,28 @@ class Int:
         return f"Int{self.depth}_{self.__c}"
     def __repr__(self):
         return f"{self.name} value={self.value} entropy={self.entropy}"
+
+class UInt:
+    count=0
+    def __init__(self, value=None,depth=32):
+        self.depth=depth
+        if value==None:self.value=None
+        elif 0<=value<2**self.depth:self.value=int(value)
+        else: raise ValueError(f"Invalid value in unsigned integer range [0, {2**self.depth})")
+        self.__c=UInt.count
+        UInt.count+=1
+
     
+    @property
+    def entropy(self):
+        if self.value==None: return self.depth
+        else: return 0
+    @property
+    def name(self):
+        return f"UInt{self.depth}_{self.__c}"
+    def __repr__(self):
+        return f"{self.name} value={self.value} entropy={self.entropy}"
+  
 class Float:
     count=0
     def __init__(self, value, exponent=8, mantissa=23 ):
@@ -89,7 +110,7 @@ class Float:
         
         inf=self.float_info
         if value==None:self.value=None
-        elif inf["min"]<=value<=inf["max"]:self.value=float(value)
+        elif -inf["max"]<=value<=inf["max"]:self.value=float(value)
         else:raise ValueError(f"Invalid value for {exponent}e{mantissa}m float{self.depth} range is [{inf['min']},{inf['max']}] ")
         
     @property
@@ -154,7 +175,58 @@ class Qudit:
         return f"{self.num_levels}-levelQudit_{self.__c}"
     def __repr__(self):
         return f"{self.name} value={self.value} entropy={self.entropy}"
+
+class ArrayHolder(object):
+    count=0
+    def __init__(self, value, dtype=Float(0), shape=(1,)):
+        if not isinstance(value, (np.ndarray,tuple, list)):
+            if value==None:
+                self.value=None
+                if isinstance(shape, tuple):
+                    self.shape=shape
+                else:
+                    raise TypeError("shape needs to be a tuple")
+            else:
+                raise TypeError("value needs to be an array")
+        else:
+            self.value=np.array(value)
+
+        if not isinstance(dtype, (Bool, Int, UInt, Float, Qudit)):
+            raise TypeError("dtye should be one of them (Bool, Int, UInt, Float, Qudit)")
+        self.dtype=dtype
+        self.__c=ArrayHolder.count
+        ArrayHolder.count+=1
+
+    @property
+    def entropy(self):
+        if type(self.value)!=np.ndarray:
+            self.dtype.value=None
+            return self.dtype.entropy*np.prod(self.shape)
+        else:return 0
+
+    def __repr__(self):
+        if type(self.value)!=np.ndarray:
+            return f"ArrayHolder_{self.__c}: array of {repr(self.dtype)[:repr(self.dtype).index(' ')]} shape={self.shape} entropy={self.entropy}"
+        else:
+            return f"ArrayHolder_{self.__c}: array of {repr(self.dtype)[:repr(self.dtype).index(' ')]} shape={self.value.shape} entropy={self.entropy}"
+    @property
+    def name(self): return f"ArrayHolder_{self.__c}"
     
-        
-        
+            
+                
+class Edge(object):
+    count=0
+    def __init__(self,sculk):
+        self.sculk=sculk
+        self.__c=0
+        Edge.count+=1
+
+    def vhdl(self):
+        if type(self.sculk)==Bool:
+            if self.sculk.value==None:
+                return f"{self.sculk.name}:std_logic:='X'"
+            elif self.sculk.value==0:
+                return f"{self.sculk.name}:std_logic:='0'"
+            elif self.sculk.value==1:
+                return f"{self.sculk.name}:std_logic:='1'"
         
