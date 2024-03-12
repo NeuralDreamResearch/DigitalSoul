@@ -1,11 +1,7 @@
 # DigitalSoul: Unified platform for CPU, GPU, FPGA, Quantum Computing
 print("Interacting with reality...")
 import numpy as np
-import re
-import sys
-import math
 #import networkx as nxp
-from scipy.special import expn
 try:
     import tensorflow as tf
     print("Tensorflow is available")
@@ -421,8 +417,7 @@ class Node(object):
             text+="\n\t"+node
         text+="\nend architecture Behavioral;"
         return text
-
-        
+      
         
 class LogicalAnd(Node):
     count=0
