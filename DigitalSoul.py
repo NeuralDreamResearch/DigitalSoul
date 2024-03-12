@@ -377,9 +377,11 @@ class Node(object):
 
     def node_accumulator(self):
         operations=set()
-        a=self.__ops["vhdl"](*[i.sculk.name for i in self.__in_terminals])
-        for i in range(len(self.__out_terminals)):
-            operations.add(f"{self.__out_terminals[i].sculk.name}<={a[i]};")
+        
+        if self.__ops["vhdl_class"]==0:
+            a=self.__ops["vhdl"](*[i.sculk.name for i in self.__in_terminals])
+            for i in range(len(self.__out_terminals)):
+                operations.add(f"{self.__out_terminals[i].sculk.name}<={a[i]};")
         for i in self.__in_terminals:
             if i.predecessor==None:
                 pass
@@ -390,11 +392,11 @@ class Node(object):
     def transpile(self,target="vhdl"):
         edges=self.edge_accumulator()
         inputs=self.input_accumulator()
-        signals=edges.difference(inputs)
-        nodes=self.node_accumulator()
         outputs=set([i.vhdl() for i in self.__out_terminals])
+        signals=edges.difference(inputs).difference(outputs)
+        nodes=self.node_accumulator()
         
-        print("Edges",edges,"\nInputs",inputs, "\nSignals",signals,"\nNodes",nodes,"\nOutputs",outputs)
+        #print("Edges",edges,"\nInputs",inputs, "\nSignals",signals,"\nNodes",nodes,"\nOutputs",outputs)
         
         text="library IEEE;\nuse IEEE.STD_LOGIC_1164.ALL;\nentity main is"
         text+="\nPort(\n\t"
@@ -419,11 +421,7 @@ class Node(object):
             text+="\n\t"+node
         text+="\nend architecture Behavioral;"
         return text
-        
-        
 
-        
-        
         
         
 class LogicalAnd(Node):
@@ -434,7 +432,8 @@ class LogicalAnd(Node):
             "np": lambda a,b:(np.logical_and(a,b),),
             "cp":lambda a,b:(cp.logical_and(a,b),),
             "tf":lambda a,b:(tf.logical_and(a,b),),
-            "vhdl":lambda a,b: (f"{a} and {b}",)
+            "vhdl":lambda a,b: (f"{a} and {b}",),
+            "vhdl_class":0
         })
         self.__c=LogicalAnd.count
         LogicalAnd.count+=1
@@ -447,40 +446,11 @@ class LogicalOr(Node):
             "np": lambda a,b:(np.logical_or(a,b),),
             "cp":lambda a,b:(cp.logical_or(a,b),),
             "tf":lambda a,b:(tf.logical_or(a,b),),
-            "vhdl":lambda a,b: (f"{a} or {b}",)
+            "vhdl":lambda a,b: (f"{a} or {b}",),
+            "vhdl_class":0
         })
         self.__c=LogicalOr.count
         LogicalOr.count+=1  
 
 class FeedBack(object):
     pass# This class takes a computational graph, and cyclicy executes it several times
-"""
-import DigitalSoul as ds
-
-in1=ds.Bool(False)
-in2=ds.Bool(True)
-in3=ds.Bool(None)
-in4=ds.Bool(True)
-in5=ds.Bool(None)
-
-e1=ds.Edge(in1)
-e2=ds.Edge(in2)
-e3=ds.Edge(in3)
-e4=ds.Edge(in4)
-e5=ds.Edge(in5)
-e6=ds.Edge(ds.Bool(False))
-e7=ds.Edge(ds.Bool(None))
-
-print("\n"*7)
-or_gate=ds.LogicalOr((e1,e2), e3)
-or_gate=ds.LogicalOr((e3,e4), e5)
-and_gate1=ds.LogicalAnd((e5,e6), e7)
-print(e7)
-print("Executing function")
-print(and_gate1.transpile("vhdl"))
-and_gate1.execute("np")
-
-print(e7)
-
-
-"""
