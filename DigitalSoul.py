@@ -271,6 +271,7 @@ class Edge(object):
         self.sculk=sculk
         self.__c=Edge.count
         Edge.count+=1
+        self.predecessor=None
 
     def vhdl(self):
         if type(self.sculk)==Bool:
@@ -398,8 +399,49 @@ class Node(object):
             arch_decl += upstream_node.transpile(target, visited)
 
         return entity_decl + arch_decl
+    
+    def edge_accumulator(self):
+        edges=set([i.vhdl() for i in self.__in_terminals]+[i.vhdl() for i in self.__out_terminals]);
+        inputs=set()        
+        for i in self.__in_terminals:
+            if i.predecessor!=None:
+                edges=edges.union(i.predecessor.edge_accumulator())
+        return edges
 
-    def transpile(target="vhdl"):pass
+    def input_accumulator(self):
+        inputs=set()
+        for i in self.__in_terminals:
+            if i.predecessor==None:
+                """
+                a=i.vhdl()
+                b=a.index(":")
+                c=a[b+1:].index(":")
+                a=a[:b+1]+"in "+a[b+1:b+c+1]"""
+                inputs.add(i.vhdl())
+            else:
+                inputs=inputs.union(i.predecessor.input_accumulator())
+        return inputs
+
+    def node_accumulator(self):
+        operations=set()
+        a=self.__ops["vhdl"](*[i.name for i in self.__in_terminals])
+        for i in range(len(self.__out_terminals)):
+            operations.add(f"{self.__out_terminals[i].sculk.name}<={a[i]};")
+        for i in self.__in_terminals:
+            if i.predecessor==None:
+                pass
+            else:
+                operations=operations.union(i.predecessor.node_accumulator())
+        return operations
+
+    def transpile(self,target="vhdl"):
+        edges=self.edge_accumulator()
+        inputs=self.input_accumulator()
+        signals=edges.difference(inputs)
+        nodes=self.node_accumulator()
+        print("Edges",edges,"\nInputs",inputs, "\nSignals",signals,"\nNodes",nodes)
+
+        
         
         
         
@@ -411,7 +453,7 @@ class LogicalAnd(Node):
             "np": lambda a,b:(np.logical_and(a,b),),
             "cp":lambda a,b:(cp.logical_and(a,b),),
             "tf":lambda a,b:(tf.logical_and(a,b),),
-            "vhdl":(lambda a,b: f"{out_terminals.name}<={a} and {b};")
+            "vhdl":lambda a,b: (f"{a} and {b}",)
         })
         self.__c=LogicalAnd.count
         LogicalAnd.count+=1
@@ -424,7 +466,7 @@ class LogicalOr(Node):
             "np": lambda a,b:(np.logical_or(a,b),),
             "cp":lambda a,b:(cp.logical_or(a,b),),
             "tf":lambda a,b:(tf.logical_or(a,b),),
-            "vhdl":(lambda a,b: f"{out_terminals.name}<={a} or {b};")
+            "vhdl":lambda a,b: (f"{a} or {b}",)
         })
         self.__c=LogicalOr.count
         LogicalOr.count+=1  
@@ -460,15 +502,4 @@ and_gate1.execute("np")
 print(e7)
 
 
-"""
-
-"""
-q0=DigitalSoul.Qudit([0, 1])
-q1=DigitalSoul.Qudit([1, 0])
-
-i=DigitalSoul.QuantumGate([[1,0],[0,1]])
-x=DigitalSoul.QuantumGate([[0,1],[1,0]])
-print(q0&q1)
-print(i&x)
-print((i&x)(q0&q1))
 """
