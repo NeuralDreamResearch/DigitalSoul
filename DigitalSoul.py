@@ -451,6 +451,3 @@ class LogicalOr(Node):
         })
         self.__c=LogicalOr.count
         LogicalOr.count+=1  
-
-class FeedBack(object):
-    pass# This class takes a computational graph, and cyclicy executes it several times
