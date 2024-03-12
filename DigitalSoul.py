@@ -175,6 +175,7 @@ class Qudit:
         return f"{self.num_levels}-levelQudit_{self.__c}"
     def __repr__(self):
         return f"{self.name} value={self.value} entropy={self.entropy}"
+    def __and__(self, other):return Qudit(np.kron(self.value, other.value))
 
 class QuantumGate(object):
     count=0
@@ -216,6 +217,8 @@ class QuantumGate(object):
     def entropy(self):return 0
     @property
     def name(self):return f"QuantumGate_{self.__c}"
+    def __and__(self, other):return QuantumGate(np.kron(self.data, other.data))
+    def __call__(self, sv): return Qudit(np.matmul(self.value, sv.value))
  
 class Tensor(object):
     count=0
@@ -278,15 +281,29 @@ class Edge(object):
             elif self.sculk.value==1:
                 return f"{self.sculk.name}:std_logic:='1'"
         elif type(self.sculk)==UInt:
-            if self.sculk.value==None: return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):='"+self.sculk.depth*"X"+"'"
+            if self.sculk.value==None: return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):=\""+self.sculk.depth*"X"+"\""
             else:
                 a=bin(self.sculk.value)[2:]
-                return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):='"+(self.sculk.depth-len(a))*"0"+a+"'"
+                return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):=\""+(self.sculk.depth-len(a))*"0"+a+"\""
         elif type(self.sculk)==Int:
-            if self.sculk.value==None: return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):='"+self.sculk.depth*"X"+"'"
-            elif self.sculk.value>0:
-                a=bin(self.sculk.value)
-                return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):='"+(self.sculk.depth-len(a))*"0"+a+"'"
+            def twoscpl(x:int, maxn: int):
+                a=bin(abs(x))[2:];   
+                a="0"*(maxn-len(a))+a
+                if x>=0:    
+                    return a
+                else:
+                    b=""
+                    for i in range(maxn):
+                        if a[i]=="0":b+="1"
+                        else: b+="0"
+                    a=int(b,2)+1
+                    a=bin(a)[2:];   
+                    a="0"*(maxn-len(a))+a
+                    return a
+            if self.sculk.value==None: return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):=\""+self.sculk.depth*"X"+"\""
+            else:
+                a=twoscpl(self.sculk.value, self.sculk.depth)
+                return f"{self.sculk.name}:std_logic_vector({self.sculk.depth-1} downto 0):=\""+a+"\""
                        
     @property
     def name(self): return f"Edge_{self.__c}"
@@ -335,7 +352,7 @@ class Node(object):
         for i in range(len(self.__out_terminals)):
             self.__out_terminals[i].sculk.value=self.__contemplate[i]
             
-    def transpile(self, target="vhdl", visited=None):
+    def transpile1(self, target="vhdl", visited=None):
         if visited is None:
             visited = set()  # Keep track of visited nodes to prevent infinite recursion
 
@@ -381,6 +398,8 @@ class Node(object):
             arch_decl += upstream_node.transpile(target, visited)
 
         return entity_decl + arch_decl
+
+    def transpile(target="vhdl"):pass
         
         
         
@@ -410,6 +429,8 @@ class LogicalOr(Node):
         self.__c=LogicalOr.count
         LogicalOr.count+=1  
 
+class FeedBack(object):
+    pass# This class takes a computational graph, and cyclicy executes it several times
 """
 import DigitalSoul as ds
 
@@ -439,4 +460,15 @@ and_gate1.execute("np")
 print(e7)
 
 
+"""
+
+"""
+q0=DigitalSoul.Qudit([0, 1])
+q1=DigitalSoul.Qudit([1, 0])
+
+i=DigitalSoul.QuantumGate([[1,0],[0,1]])
+x=DigitalSoul.QuantumGate([[0,1],[1,0]])
+print(q0&q1)
+print(i&x)
+print((i&x)(q0&q1))
 """
