@@ -352,7 +352,7 @@ class Node(object):
         self.__contemplate=self.__ops[executor](*[i.unpack(executor) for i in self.__in_terminals])
         for i in range(len(self.__out_terminals)):
             self.__out_terminals[i].sculk.value=self.__contemplate[i]
-
+    
     def edge_accumulator(self):
         edges=set([i.vhdl() for i in self.__in_terminals]+[i.vhdl() for i in self.__out_terminals]);
         inputs=set()        
@@ -377,7 +377,7 @@ class Node(object):
 
     def node_accumulator(self):
         operations=set()
-        a=self.__ops["vhdl"](*[i.name for i in self.__in_terminals])
+        a=self.__ops["vhdl"](*[i.sculk.name for i in self.__in_terminals])
         for i in range(len(self.__out_terminals)):
             operations.add(f"{self.__out_terminals[i].sculk.name}<={a[i]};")
         for i in self.__in_terminals:
