@@ -352,54 +352,7 @@ class Node(object):
         self.__contemplate=self.__ops[executor](*[i.unpack(executor) for i in self.__in_terminals])
         for i in range(len(self.__out_terminals)):
             self.__out_terminals[i].sculk.value=self.__contemplate[i]
-            
-    def transpile1(self, target="vhdl", visited=None):
-        if visited is None:
-            visited = set()  # Keep track of visited nodes to prevent infinite recursion
 
-        if self in visited: 
-            return ""  # Already transpiled 
-        
-        visited.add(self)
-        # Entity Declaration
-        entity_name = f"Node_{self.__c}"
-        entity_decl = f"entity {entity_name} is\n  port (\n"
-
-        # Input port declarations
-        for in_terminal in self.__in_terminals:
-            entity_decl += f"    {in_terminal.name} : in std_logic;\n"
-
-        # Output port declarations
-        for out_terminal in self.__out_terminals:
-            entity_decl += f"    {out_terminal.name} : out std_logic;\n"
-
-        entity_decl += ");\nend entity;\n\n" 
-
-        # Architecture Declaration
-        arch_name = f"{entity_name}_arch"
-        arch_decl = f"architecture behavioral of {entity_name} is\n"
-
-        # Signal declarations for edges
-        arch_decl += "  signal " + ", ".join([e.name for e in self.__in_terminals + self.__out_terminals]) + " : std_logic;\n"
-
-        arch_decl += "begin\n"
-
-        # Generate VHDL code based on operation type
-        if self.__ops[target] is not None:
-            operation_vhdl = self.__ops[target](*[i.name for i in self.__in_terminals])
-        else:  
-            raise NotImplementedError(f"Transpilation for target '{target}' is not supported for Node type: {type(self)}")
-
-        arch_decl += f"  {operation_vhdl}\n"
-        arch_decl += "end architecture;\n"
-        
-        #  Recursively transpile input dependencies
-        for in_terminal in self.__in_terminals:
-            upstream_node = in_terminal.predecessor
-            arch_decl += upstream_node.transpile(target, visited)
-
-        return entity_decl + arch_decl
-    
     def edge_accumulator(self):
         edges=set([i.vhdl() for i in self.__in_terminals]+[i.vhdl() for i in self.__out_terminals]);
         inputs=set()        
@@ -439,7 +392,35 @@ class Node(object):
         inputs=self.input_accumulator()
         signals=edges.difference(inputs)
         nodes=self.node_accumulator()
-        print("Edges",edges,"\nInputs",inputs, "\nSignals",signals,"\nNodes",nodes)
+        outputs=set([i.vhdl() for i in self.__out_terminals])
+        
+        print("Edges",edges,"\nInputs",inputs, "\nSignals",signals,"\nNodes",nodes,"\nOutputs",outputs)
+        
+        text="library IEEE;\nuse IEEE.STD_LOGIC_1164.ALL;\nentity main is"
+        text+="\nPort(\n\t"
+        for input_edge in inputs:
+            a=input_edge.index(":")
+            b=input_edge[a+1:].index(":")
+            text+=input_edge[:a]+":in "+input_edge[a+1:a+b+1]+";\n\t"
+
+        for i,output_edge in enumerate(outputs):
+            a=output_edge.index(":")
+            b=output_edge[a+1:].index(":")
+            text+=output_edge[:a]+":out "+output_edge[a+1:a+b+1]
+
+            if i!=len(outputs)-1:
+                text+=";\n\t"
+        text+="\n);\nend main;\narchitecture Behavioral of main is"
+        for signal in signals:
+            text+="\n\tsignal "+signal[:signal.rindex(":")]
+            text+=";"
+        text+="\nbegin"
+        for node in nodes:
+            text+="\n\t"+node
+        text+="\nend architecture Behavioral;"
+        return text
+        
+        
 
         
         
