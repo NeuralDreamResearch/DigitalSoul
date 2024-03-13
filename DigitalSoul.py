@@ -445,4 +445,20 @@ class LogicalOr(Node):
             "vhdl_class":0
         })
         self.__c=LogicalOr.count
-        LogicalOr.count+=1  
+        LogicalOr.count+=1
+
+class QN:
+    i=QuantumGate([[1,0],[0,1]])
+    x=QuantumGate([[0,1],[1,0]])
+    y=QuantumGate([[0,-1j],[1j,0]])
+    z=QuantumGate([[1,0],[0,-1]])
+    h=QuantumGate([[1/2**.5,1/2**.5],[1/2**.5,-1/2**.5]])
+    cx=i&x
+    ccx=QuantumGate([[1,0,0,0,0,0,0,0],
+                     [0,1,0,0,0,0,0,0],
+                     [0,0,1,0,0,0,0,0],
+                     [0,0,0,1,0,0,0,0],
+                     [0,0,0,0,1,0,0,0],
+                     [0,0,0,0,0,1,0,0],
+                     [0,0,0,0,0,0,0,1],
+                     [0,0,0,0,0,0,1,0]])
