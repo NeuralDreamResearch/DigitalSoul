@@ -313,6 +313,14 @@ class Edge(object):
             self.predecessor.execute(executor)
         else:
             return self.sculk.value
+    def q_info(self):
+        if type(self.sculk)==Bool:
+            if self.sculk.value==False: return Qudit((1, 0))
+            elif self.sculk.value==True: return Qudit((0,1))
+            else: return Qudit((1, 0))
+        elif type(self.sculk)==Qudit: return self.sculk
+        elif type(self.sculk)==UInt: return Qudit(str(self.sculk.value), 2**self.sculk.depth)
+        elif type(self.sculk)==Int: return Qudit(str(int(self.vhdl().split('"')[1],2)), 2**self.sculk.depth)
 
 class Node(object):
     count=0
