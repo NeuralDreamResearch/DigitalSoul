@@ -11,7 +11,13 @@ DigitalSoul is a Python module designed to bridge the gap between classical, qua
 *   **Node-Based Computation:** Build computational graphs using nodes that represent operations (e.g., LogicalAnd, LogicalOr).  Nodes manage input/output data through "Edges".
 *   **Multi-Backend Execution:** Execute computations using NumPy, Cupy (for GPU), TensorFlow, and internal quantum simulator
 *   **VHDL Transpilation:** Translate computational graphs into VHDL code, opening the door for hardware synthesis on FPGAs.
+## Installation
+```
+pip install DigitalSoul
+```
 
+Also download `numpy`, `cupy` and `tensorflow` if you want to access richer executors 
+	
 ## Quick Example
 
 ```python
