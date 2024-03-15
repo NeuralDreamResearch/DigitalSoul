@@ -7,17 +7,7 @@ try:
     print("Tensorflow is available")
 except:
     print("Tensorflow is skipped")
-    tf=np
-try:
-    import qiskit
-    print("Classical&Quantum Resources are available. Eager executor can access both.")
-    try:
-        import QALU
-    except:
-        print("Install QALU for accessing Quantum Resources. Install with:\npip install QALU")
-except:
-    print("Classical Resources are available")
-    
+    tf=np    
 try:
     import cupy as cp
     print("GPU resources are available. Eager executor can access it.")
@@ -215,7 +205,31 @@ class QuantumGate(object):
     def name(self):return f"QuantumGate_{self.__c}"
     def __and__(self, other):return QuantumGate(np.kron(self.data, other.data))
     def __call__(self, sv): return Qudit(np.matmul(self.value, sv.value))
- 
+
+class NonHermitianGate:
+    count=0
+    def __init__(self, data):
+        if isinstance(data,(list, tuple)): self.__data=np.array(data)
+        elif isinstance(data, np.ndarray):self.__data=data
+        else: raise TypeError("data must be a 2D array, list or tuple")
+        if len(self.__data.shape)!=2:raise ValueError("data must be a 2D array, list or tuple")
+        self.__c=NonHermitianGate.count
+        NonHermitianGate.count+=1
+    @property
+    def value(self):return self.__data
+    @property
+    def name(self): return f"{self.__data[0]}×{self.__data[1]}NonHermetianGate{self.__c}"
+
+    def __call__(self, sv):
+        if sv.num_levels!=self.__data.shape[1]:raise ValueError("Dimesnions are unmatched for operating on NonHermetianGate")
+        a=self.value @ sv.value
+        a**=.5
+        a/=(np.sum(np.abs(a)**2))**.5
+        
+        return Qudit(a)
+    
+    def __repr__(self):return f"{self.name}"
+    
 class Tensor(object):
     count=0
     def __init__(self, value, dtype=Float(0), shape=(1,)):
@@ -252,11 +266,6 @@ class Tensor(object):
             return f"Tensor_{self.__c}: array of {repr(self.dtype)[:repr(self.dtype).index(' ')]} shape={self.value.shape} entropy={self.entropy}"
     @property
     def name(self): return f"Tensor_{self.__c}"
-    
-    
-    
-    
-    
             
                 
 class Edge(object):
@@ -268,6 +277,7 @@ class Edge(object):
         self.__c=Edge.count
         Edge.count+=1
         self.predecessor=None
+        self.sv=None
 
     def vhdl(self):
         if type(self.sculk)==Bool:
@@ -314,6 +324,9 @@ class Edge(object):
         else:
             return self.sculk.value
     def q_info(self):
+        if self.sculk.value==None: 
+            if self.sv==None:self.predecessor.q_stream()
+            return self.sv
         if type(self.sculk)==Bool:
             if self.sculk.value==False: return Qudit((1, 0))
             elif self.sculk.value==True: return Qudit((0,1))
@@ -321,7 +334,7 @@ class Edge(object):
         elif type(self.sculk)==Qudit: return self.sculk
         elif type(self.sculk)==UInt: return Qudit(str(self.sculk.value), 2**self.sculk.depth)
         elif type(self.sculk)==Int: return Qudit(str(int(self.vhdl().split('"')[1],2)), 2**self.sculk.depth)
-
+    
 class Node(object):
     count=0
     def __init__(self, in_terminals, out_terminals, ops={"np":None, "cp":None, "tf":None, "vhdl":None,"qc":None}):
@@ -347,6 +360,7 @@ class Node(object):
         for terminal in out_terminals:
             terminal.set_predecessor(self)
         
+        self.__qv_contemplate=None
         self.__c=Node.count
         Node.count+=1
         self.__ops=ops
@@ -425,7 +439,15 @@ class Node(object):
             text+="\n\t"+node
         text+="\nend architecture Behavioral;"
         return text
-      
+
+    def qv_contemplate(self):return self.__qv_contemplate
+     
+    def q_stream(self):
+        if self.__qv_contemplate==None:
+            self.__qv_contemplate=self.__ops["nhq"](*[i for i in self.__in_terminals])
+        for i,edge in enumerate(self.__out_terminals):
+            edge.sv=self.__qv_contemplate[i]
+            
         
 class LogicalAnd(Node):
     count=0
@@ -436,7 +458,8 @@ class LogicalAnd(Node):
             "cp":lambda a,b:(cp.logical_and(a,b),),
             "tf":lambda a,b:(tf.logical_and(a,b),),
             "vhdl":lambda a,b: (f"{a} and {b}",),
-            "vhdl_class":0
+            "vhdl_class":0,
+            "nhq": lambda a,b: (NonHermitianGate(((1.,1,1,0),(0,0,0,1)))(a.q_info()&b.q_info()),)
         })
         self.__c=LogicalAnd.count
         LogicalAnd.count+=1
@@ -450,7 +473,8 @@ class LogicalOr(Node):
             "cp":lambda a,b:(cp.logical_or(a,b),),
             "tf":lambda a,b:(tf.logical_or(a,b),),
             "vhdl":lambda a,b: (f"{a} or {b}",),
-            "vhdl_class":0
+            "vhdl_class":0,
+            "nhq": lambda a,b: (NonHermitianGate(((1.,0,0,0),(0,1,1,1)))(a.q_info()&b.q_info()),)
         })
         self.__c=LogicalOr.count
         LogicalOr.count+=1
