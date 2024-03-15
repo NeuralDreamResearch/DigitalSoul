@@ -9,7 +9,7 @@ DigitalSoul is a Python module designed to bridge the gap between classical, qua
 
 *   **Customizable Data Types:** Define Boolean (Bool), integer (Int, UInt), floating-point (Float), quantum states (Qudit), quantum gates (QuantumGate), and multidimensional tensors (Tensor) to suit your computational needs.
 *   **Node-Based Computation:** Build computational graphs using nodes that represent operations (e.g., LogicalAnd, LogicalOr).  Nodes manage input/output data through "Edges".
-*   **Multi-Backend Execution:** Execute computations using NumPy, Cupy (for GPU), TensorFlow, and potentially quantum simulators like Qiskit.
+*   **Multi-Backend Execution:** Execute computations using NumPy, Cupy (for GPU), TensorFlow, and internal quantum simulator
 *   **VHDL Transpilation:** Translate computational graphs into VHDL code, opening the door for hardware synthesis on FPGAs.
 
 ## Quick Example
@@ -182,7 +182,7 @@ As you can see from output, the value of output edge(e7, shown as Edge_6) is unc
 </pre>
 ## Roadmap
 
-*   Full integration with Qiskit and/or QALU for quantum computation.
+*   Implementing more nodes
 *   Improved hardware synthesis flow with VHDL transpilation.
 *   Custom node creation guide.
 
