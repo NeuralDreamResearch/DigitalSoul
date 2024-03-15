@@ -78,11 +78,6 @@ As you can see from output, the value of output edge(e7, shown as Edge_6) is unc
 |
 |
 |----Int--------------------|
-|                           |---__init__(max_entropy=1,)
-|                           |---__init__(value=None)
-|                           |---entropy()
-|                           |---name()
-|                           |---__repr__()
 |                           |---__init__(value=None,depth=32)
 |                           |---bounds()
 |                           |---entropy()
@@ -169,6 +164,8 @@ As you can see from output, the value of output edge(e7, shown as Edge_6) is unc
 |
 |
 |----LogicalOr(Node)--------|
+|
+|
 |----QN---------------------|
                             |---i
                             |---x
