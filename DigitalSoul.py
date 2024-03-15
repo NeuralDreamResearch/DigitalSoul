@@ -479,6 +479,38 @@ class LogicalOr(Node):
         self.__c=LogicalOr.count
         LogicalOr.count+=1
 
+class LogicalXor(Node):
+    count=0
+    def __init__(self, in_terminals, out_terminals):
+        
+        super().__init__(in_terminals, out_terminals, ops={
+            "np": lambda a,b:(np.logical_xor(a,b),),
+            "cp":lambda a,b:(cp.logical_xor(a,b),),
+            "tf":lambda a,b:(tf.logical_xor(a,b),),
+            "vhdl":lambda a,b: (f"{a} xor {b}",),
+            "vhdl_class":0,
+            "nhq": lambda a,b: (NonHermitianGate(((1.,0,0,1.),(0,1,1,0)))(a.q_info()&b.q_info()),)
+        })
+        self.__c=LogicalXor.count
+        LogicalXor.count+=1
+        
+class LogicalNot(Node):
+    count=0
+    def __init__(self, in_terminals, out_terminals):
+        
+        super().__init__(in_terminals, out_terminals, ops={
+            "np": lambda a:(np.logical_not(a),),
+            "cp":lambda a:(cp.logical_not(a),),
+            "tf":lambda a:(tf.logical_not(a),),
+            "vhdl":lambda a: (f"not({a})",),
+            "vhdl_class":0,
+            "nhq": lambda a,b: (QN.x)(a.q_info(),)
+        })
+        self.__c=LogicalNot.count
+        LogicalNot.count+=1
+        
+
+
 class QN:
     i=QuantumGate([[1,0],[0,1]])
     x=QuantumGate([[0,1],[1,0]])
