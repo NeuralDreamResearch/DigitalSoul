@@ -18,16 +18,18 @@ DigitalSoul is a Python module designed to bridge the gap between classical, qua
 import DigitalSoul as ds
 
 e1=ds.Edge(ds.Bool(False))
-e2=ds.Edge(ds.Bool(True))
+e2=ds.Edge(ds.Bool(False))
 e3=ds.Edge(ds.Bool(None))
 e4=ds.Edge(ds.Bool(True))
 e5=ds.Edge(ds.Bool(None))
-e6=ds.Edge(ds.Bool(False))
+e6=ds.Edge(ds.Bool(True))
 e7=ds.Edge(ds.Bool(None))
+e8=ds.Edge(ds.Bool(None))
 
 print("\n"*4)
 or_gate=ds.LogicalOr((e1,e2), e3)
-or_gate=ds.LogicalOr((e3,e4), e5)
+xor_gate=ds.LogicalXor((e3,e4), e8)
+not_gate=ds.LogicalNot(e8,e5)
 and_gate1=ds.LogicalAnd((e5,e6), e7)
 print(e7)
 print("Executing function")
@@ -47,23 +49,27 @@ Edge_6 holding Bool_6 value=False entropy=0
  2-levelQudit_3 value=[1. 0.] entropy=0
 
 
+
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 entity main is
 Port(
-	Bool_3:in std_logic;
-	Bool_5:in std_logic;
 	Bool_1:in std_logic;
 	Bool_0:in std_logic;
+	Bool_3:in std_logic;
+	Bool_5:in std_logic;
 	Bool_6:out std_logic
 );
 end main;
 architecture Behavioral of main is
-	signal Bool_4:std_logic;
 	signal Bool_2:std_logic;
+	signal Bool_4:std_logic;
+	signal Bool_7:std_logic;
 begin
-	Bool_4<=Bool_2 or Bool_3;
+	Bool_7<=Bool_2 xor Bool_3;
 	Bool_2<=Bool_0 or Bool_1;
+	Bool_4<=not(Bool_7);
 	Bool_6<=Bool_4 and Bool_5;
 end architecture Behavioral;
 </pre>
