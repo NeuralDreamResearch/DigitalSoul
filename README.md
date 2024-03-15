@@ -166,6 +166,12 @@ As you can see from output, the value of output edge(e7, shown as Edge_6) is unc
 |----LogicalOr(Node)--------|
 |
 |
+|----LogicalXor(Node)--------|
+|
+|
+|----LogicalNot(Node)--------|
+|
+|
 |----QN---------------------|
                             |---i
                             |---x
