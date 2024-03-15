@@ -150,7 +150,7 @@ As you can see from output, the value of output edge(e7, shown as Edge_6) is unc
 |
 |
 |----Node(object)-----------|
-|                           |---__init__(in_terminals,out_terminals,ops={"np"
+|                           |---__init__(in_terminals,out_terminals,ops)
 |                           |---execute(executor="np")
 |                           |---edge_accumulator()
 |                           |---input_accumulator()
@@ -161,16 +161,16 @@ As you can see from output, the value of output edge(e7, shown as Edge_6) is unc
 |
 |
 |----LogicalAnd(Node)-------|
-|
+|                           |---__init__(in_terminals,out_terminals,ops)
 |
 |----LogicalOr(Node)--------|
-|
+|                           |---__init__(in_terminals,out_terminals,ops)
 |
 |----LogicalXor(Node)--------|
-|
+|                            |---__init__(in_terminals,out_terminals,ops)
 |
 |----LogicalNot(Node)--------|
-|
+|                            |---__init__(in_terminals,out_terminals,ops)
 |
 |----QN---------------------|
                             |---i
