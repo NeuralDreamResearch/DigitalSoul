@@ -528,6 +528,19 @@ class ScalarAdd(Node):
             "vhdl": lambda a,b,c,N:"adder_"+str(self.__c)+f": entity work.FixedPointAdder generic map(N=>{N}) port map(a=>{a}, b=>{b}, overflow=>open, c=>{c});",
             "vhdl_class":1
             })
+
+class ScalarSubtract(Node):
+    count=0
+    def __init__(self,in_terminals, out_terminals):
+        self.__c=ScalarSubtract.count;ScalarAdd.count+=1
+        super().__init__(in_terminals, out_terminals, ops={
+            "np":lambda a,b: (np.subtract(a,b),),
+            "cp":lambda a,b: (cp.subtract(a,b),),
+            "tf":lambda a,b: (tf.subtract(a,b),),
+            "vhdl": lambda a,b,c,N:"adder_"+str(self.__c)+f": entity work.FixedPointSubtractor generic map(N=>{N}) port map(a=>{a}, b=>{b}, overflow=>open, c=>{c});",
+            "vhdl_class":1
+            })
+        
 class QN:
     i=QuantumGate([[1,0],[0,1]])
     x=QuantumGate([[0,1],[1,0]])
