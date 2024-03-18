@@ -15,16 +15,8 @@ DigitalSoul is a Python module designed to bridge the gap between classical, qua
 From PyPI
 ```
 pip install DigitalSoul
+python setup.py install
 ```
-From Local
-
-```
-
-cd root_dir_of_project
-python setup.py build_ext --inplace
-
-```
-
 Also download `numpy`, `cupy` and `tensorflow` if you want to access richer executors 
 	
 ## Quick Example
