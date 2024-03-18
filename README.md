@@ -16,7 +16,6 @@ From PyPI
 ```
 pip install setuptools wheel
 pip install DigitalSoul
-python setup.py install
 ```
 Also download `numpy`, `cupy` and `tensorflow` if you want to access richer executors 
 	
