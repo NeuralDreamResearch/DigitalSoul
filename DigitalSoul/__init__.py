@@ -1,7 +1,9 @@
 # DigitalSoul: Unified platform for CPU, GPU, FPGA, Quantum Computing
 print("Interacting with reality...")
 import numpy as np
-#import networkx as nxp
+import DigitalSoul.erg
+
+
 try:
     import tensorflow as tf
     print("Tensorflow is available")
