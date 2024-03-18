@@ -1,4 +1,4 @@
-try:import DigitalSoul.dscpp
+try: import DigitalSoul.dscpp
 except:print("DigitalSoul C++ assets are not compiled well")
 
 class ThermodynamicGate(DigitalSoul.dscpp.LUTx_1):
