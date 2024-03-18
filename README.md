@@ -14,6 +14,7 @@ DigitalSoul is a Python module designed to bridge the gap between classical, qua
 ## Installation
 From PyPI
 ```
+pip install setuptools wheel
 pip install DigitalSoul
 python setup.py install
 ```
