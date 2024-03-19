@@ -463,7 +463,7 @@ class Node(object):
 class LogicalAnd(Node):
     count=0
     def __init__(self, in_terminals, out_terminals):
-        
+        self.thermo=ds.erg.ThermodynamicGate(2,8)
         super().__init__(in_terminals, out_terminals, ops={
             "np": lambda a,b:(np.logical_and(a,b),),
             "cp":lambda a,b:(cp.logical_and(a,b),),
@@ -479,6 +479,7 @@ class LogicalOr(Node):
     count=0
     def __init__(self, in_terminals, out_terminals):
         
+        self.thermo=ds.erg.ThermodynamicGate(2,14)
         super().__init__(in_terminals, out_terminals, ops={
             "np": lambda a,b:(np.logical_or(a,b),),
             "cp":lambda a,b:(cp.logical_or(a,b),),
@@ -490,10 +491,11 @@ class LogicalOr(Node):
         self.__c=LogicalOr.count
         LogicalOr.count+=1
 
+
 class LogicalXor(Node):
     count=0
     def __init__(self, in_terminals, out_terminals):
-        
+        self.thermo=ds.erg.ThermodynamicGate(2,6)
         super().__init__(in_terminals, out_terminals, ops={
             "np": lambda a,b:(np.logical_xor(a,b),),
             "cp":lambda a,b:(cp.logical_xor(a,b),),
@@ -508,7 +510,7 @@ class LogicalXor(Node):
 class LogicalNot(Node):
     count=0
     def __init__(self, in_terminals, out_terminals):
-        
+        self.thermo=ds.erg.ThermodynamicGate(1,1)
         super().__init__(in_terminals, out_terminals, ops={
             "np": lambda a:(np.logical_not(a),),
             "cp":lambda a:(cp.logical_not(a),),
