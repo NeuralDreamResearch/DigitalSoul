@@ -2,6 +2,7 @@
 print("Interacting with reality...")
 import numpy as np
 import DigitalSoul.erg
+import DigitalSoul.dscpp
 
 
 try:

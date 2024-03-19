@@ -18,22 +18,25 @@ dscpp_ext = Pybind11Extension(
 packages = find_packages()  # Automatically find 'DigitalSoul'
 setup(
     name='DigitalSoul', 
-    version='1.1.0',
+    version='1.1.5',
     description='Unified Compute Platform - CPU, GPU, FPGA, Quantum Computing',
     packages=packages,
     ext_modules=[dscpp_ext],
     cmdclass={'build_ext': build_ext}, 
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url='https://github.com/NeuralDreamResearch/DigitalSoult',
+    project_urls = {
+    'Homepage': 'https://github.com/NeuralDreamResearch/DigitalSoul',
+    'Documentation': 'https://github.com/NeuralDreamResearch/DigitalSoul', 
+    'Source Code': 'https://github.com/NeuralDreamResearch/DigitalSoul',
+    'Bug Tracker' : 'https://github.com/NeuralDreamResearch/DigitalSoul/issues'
+	},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    install_requires=[
-        
-    ],
+    install_requires=['numpy','pybind11']
 )
 

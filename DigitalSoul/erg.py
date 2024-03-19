@@ -1,4 +1,4 @@
-try:import DigitalSoul.dscpp
+try: import DigitalSoul.dscpp
 except:print("DigitalSoul C++ assets are not compiled well")
 
 class ThermodynamicGate(DigitalSoul.dscpp.LUTx_1):
@@ -9,6 +9,9 @@ class ThermodynamicGate(DigitalSoul.dscpp.LUTx_1):
 
     @property
     def thermo_enc(self):return self.__thermo_enc
+    
+    @property
+    def __repr__(self):return self.ss
 
 
 
