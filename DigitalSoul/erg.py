@@ -9,6 +9,9 @@ class ThermodynamicGate(DigitalSoul.dscpp.LUTx_1):
 
     @property
     def thermo_enc(self):return self.__thermo_enc
+    
+    @property
+    def __repr__(self):return self.ss
 
 
 

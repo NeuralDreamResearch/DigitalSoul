@@ -212,6 +212,20 @@ public:
 	return out;
 	
 	}
+	
+	std::vector<float> entropy_plan()
+	{
+	    float totalNum=0;
+	    for(size_t i=0;i<sizeof(size_t)*8;i++)
+	    {
+	        if((LogicID>>i)&1){totalNum+=1;}
+	    }
+        
+        std::vector<float> out(2,num_inputs);
+        float p=totalNum/pow(2,num_inputs);
+        out[1]=-p*log2(p+1e-16)-(1-p)*log2(1-p+1e-16);
+        return out;
+    }
 
 
 
@@ -607,6 +621,7 @@ PYBIND11_MODULE(dscpp, m) {
         .def("entityGen", &LUTx_1::entityGen)
         .def("ss", &LUTx_1::ss) // Added the ss method
         .def("LookUpTable", &LUTx_1::LookUpTable)  // Added the LookUpTable method
-        .def("ThermoTable", &LUTx_1::ThermoTable);
+        .def("ThermoTable", &LUTx_1::ThermoTable)
+        .def("entropy_plan", &LUTx_1::entropy_plan);
 }
 
