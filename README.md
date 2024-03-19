@@ -1,7 +1,7 @@
 # Digital Soul
 ### Unified Compute Platform - CPU, GPU, FPGA, Quantum Computing
 
-<img src="https://github.com/NeuralDreamResearch/DigitalSoulPy/blob/main/Logo.png?raw=true" height=300>
+<img src="https://github.com/NeuralDreamResearch/DigitalSoulPy/blob/main/Logo.jpeg?raw=true" height=300>
 
 DigitalSoul is a Python module designed to bridge the gap between classical, quantum, and potentially hardware-accelerated computation. It provides flexible data structures and a node-based execution model, allowing you to express computations that can be seamlessly executed across CPU, GPU, quantum simulators, and potentially FPGAs.
 
