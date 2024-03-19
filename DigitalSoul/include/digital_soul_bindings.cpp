@@ -226,9 +226,6 @@ public:
         out[1]=-p*log2(p+1e-16)-(1-p)*log2(1-p+1e-16);
         return out;
     }
-	
-	
-
 
 
 
