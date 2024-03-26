@@ -18,7 +18,7 @@ dscpp_ext = Pybind11Extension(
 packages = find_packages()  # Automatically find 'DigitalSoul'
 setup(
     name='DigitalSoul', 
-    version='1.1.5',
+    version='1.1.9',
     description='Unified Compute Platform - CPU, GPU, FPGA, Quantum Computing',
     packages=packages,
     ext_modules=[dscpp_ext],

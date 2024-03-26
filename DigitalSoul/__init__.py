@@ -4,6 +4,7 @@ import numpy as np
 import DigitalSoul.erg
 import DigitalSoul.dscpp
 
+version="1.1.9"
 
 try:
     import tensorflow as tf
@@ -236,7 +237,7 @@ class NonHermitianGate:
 class Tensor(object):
     count=0
     def __init__(self, value, dtype=Float(0), shape=(1,)):
-        if not isinstance(value, (np.ndarray,tuple, list)):
+        if not isinstance(value, (np.ndarray,tuple, list,cp.ndarray,tf.Tensor)):
             if value==None:
                 self.value=None
                 if isinstance(shape, tuple):
@@ -269,6 +270,23 @@ class Tensor(object):
             return f"Tensor_{self.__c}: array of {repr(self.dtype)[:repr(self.dtype).index(' ')]} shape={self.value.shape} entropy={self.entropy}"
     @property
     def name(self): return f"Tensor_{self.__c}"
+    
+    def __getitem__(self,args):
+        if type(args)==tuple:
+            if type(args[-1])==float:
+                if args[-1]==0.5:#Intention is to fetch index
+                    return self.value.__getitem__(args[:-1])
+                elif args[-1]==1.5:#intention is to fetch vhdl
+                    pass
+            else:
+                return self.value.__getitem__(args)
+
+        elif type(args)==slice:
+            return self.value[args]
+        elif type(args)==float:
+            if args==0.5:
+                return self.value
+    def __setitem__(self,key,value): print(key);print(value)
             
                 
 class Edge(object):
@@ -424,8 +442,7 @@ class Node(object):
             outputs=set([i.vhdl() for i in self.__out_terminals])
             signals=edges.difference(inputs).difference(outputs)
             nodes=self.node_accumulator()
-            
-            print("Edges",edges,"\nInputs",inputs, "\nSignals",signals,"\nNodes",nodes,"\nOutputs",outputs)
+
             text=vhdl_preset
             text+="library IEEE;\nuse IEEE.STD_LOGIC_1164.ALL;\nentity main is"
             text+="\nPort(\n\t"
@@ -462,8 +479,8 @@ class Node(object):
         
 class LogicalAnd(Node):
     count=0
+    LogicID=8
     def __init__(self, in_terminals, out_terminals):
-        self.thermo=DigitalSoul.erg.ThermodynamicGate(2,8)
         super().__init__(in_terminals, out_terminals, ops={
             "np": lambda a,b:(np.logical_and(a,b),),
             "cp":lambda a,b:(cp.logical_and(a,b),),
@@ -477,9 +494,8 @@ class LogicalAnd(Node):
         
 class LogicalOr(Node):
     count=0
+    LogicID=14
     def __init__(self, in_terminals, out_terminals):
-        
-        self.thermo=DigitalSoul.erg.ThermodynamicGate(2,14)
         super().__init__(in_terminals, out_terminals, ops={
             "np": lambda a,b:(np.logical_or(a,b),),
             "cp":lambda a,b:(cp.logical_or(a,b),),
@@ -491,11 +507,10 @@ class LogicalOr(Node):
         self.__c=LogicalOr.count
         LogicalOr.count+=1
 
-
 class LogicalXor(Node):
     count=0
+    LogicID=6
     def __init__(self, in_terminals, out_terminals):
-        self.thermo=DigitalSoul.erg.ThermodynamicGate(2,6)
         super().__init__(in_terminals, out_terminals, ops={
             "np": lambda a,b:(np.logical_xor(a,b),),
             "cp":lambda a,b:(cp.logical_xor(a,b),),
@@ -509,8 +524,8 @@ class LogicalXor(Node):
         
 class LogicalNot(Node):
     count=0
+    LogicID=1
     def __init__(self, in_terminals, out_terminals):
-        self.thermo=DigitalSoul.erg.ThermodynamicGate(1,1)
         super().__init__(in_terminals, out_terminals, ops={
             "np": lambda a:(np.logical_not(a),),
             "cp":lambda a:(cp.logical_not(a),),
@@ -521,7 +536,7 @@ class LogicalNot(Node):
         })
         self.__c=LogicalNot.count
         LogicalNot.count+=1
-        
+
 class ScalarAdd(Node):
     count=0
     def __init__(self,in_terminals, out_terminals):
@@ -533,6 +548,9 @@ class ScalarAdd(Node):
             "vhdl": lambda a,b,c,N:"adder_"+str(self.__c)+f": entity work.FixedPointAdder generic map(N=>{N}) port map(a=>{a}, b=>{b}, overflow=>open, c=>{c});",
             "vhdl_class":1
             })
+    def __repr__(self):
+        return f"ScalarAdd_{self.__c}"
+
 
 class ScalarSubtract(Node):
     count=0
@@ -545,7 +563,15 @@ class ScalarSubtract(Node):
             "vhdl": lambda a,b,c,N:"adder_"+str(self.__c)+f": entity work.FixedPointSubtractor generic map(N=>{N}) port map(a=>{a}, b=>{b}, overflow=>open, c=>{c});",
             "vhdl_class":1
             })
-        
+    def __repr__(self):
+        return f"ScalarSubtract_{self.__c}"
+
+class ScalarCast(Node):
+    count=0
+    def __init__(self, in_terminals, out_terminals):
+        pass
+
+
 class QN:
     i=QuantumGate([[1,0],[0,1]])
     x=QuantumGate([[0,1],[1,0]])
@@ -562,7 +588,7 @@ class QN:
                      [0,0,0,0,0,0,0,1],
                      [0,0,0,0,0,0,1,0]])
     
-    
+
 vhdl_preset=""
 """library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
