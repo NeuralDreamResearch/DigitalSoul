@@ -9,6 +9,8 @@
 #include <cmath>
 #include <cstdint>
 #include<vector>
+#include<sstream>
+
 
 // Forward declaration of the QN namespace
 
@@ -541,6 +543,257 @@ namespace QN
 };
 
 
+struct residency
+{
+	private:
+		bool* res; // Pointer to dynamically allocated array representing all resources (CPU, GPU, Signal, Register, BRAM, QNetwork)
+
+	public:
+		// Constructor with default arguments
+		residency(bool cpu = true, bool gpu = false, bool signal = false, bool registerRes = false, bool bram = false, bool QN = false) {
+		    res = new bool[6]; // Allocate memory for the unified resources array
+		    res[0] = cpu;      // Initialize the elements with the provided values
+		    res[1] = gpu;
+		    res[2] = signal;
+		    res[3] = registerRes;
+		    res[4] = bram;
+		    res[5] = QN;
+		}
+
+		// Overloaded constructor to initialize with a boolean array
+		residency(const std::array<bool, 6>& initArray) {
+		    res = new bool[6]; // Allocate memory for the unified resources array
+		    for (int i = 0; i < 6; ++i) {
+		        res[i] = initArray[i]; // Initialize with array values
+		    }
+		}
+
+		// Destructor to clean up the dynamically allocated memory
+		~residency() {
+		    delete[] res; // Free the unified resources array
+		}
+
+		// Query Methods
+
+		bool isCPUAvailable() const {
+		    return res[0];
+		}
+
+		bool isGPUAvailable() const {
+		    return res[1];
+		}
+
+		bool isSignalAvailable() const {
+		    return res[2];
+		}
+
+		bool isRegisterAvailable() const {
+		    return res[3];
+		}
+
+		bool isBRAMAvailable() const {
+		    return res[4];
+		}
+
+		bool isQNetworkAvailable() const {
+		    return res[5];
+		}
+
+		// Setter Methods
+
+		void setCPUAvailability(bool available) {
+		    res[0] = available;
+		}
+
+		void setGPUAvailability(bool available) {
+		    res[1] = available;
+		}
+
+		void setSignalAvailability(bool available) {
+		    res[2] = available;
+		}
+
+		void setRegisterAvailability(bool available) {
+		    res[3] = available;
+		}
+
+		void setBRAMAvailability(bool available) {
+		    res[4] = available;
+		}
+
+		void setQNetworkAvailability(bool available) {
+		    res[5] = available;
+		}
+
+		// Method to export the state as a boolean array
+		std::array<bool, 6> toBoolArray() const {
+		    return { res[0], res[1], res[2], res[3], res[4], res[5] };
+		}
+
+		// Function to display the current state (for demonstration purposes)
+		void ss() const {
+		    std::cout << "CPU: " << (res[0] ? "Available" : "Not Available") << ", ";
+		    std::cout << "GPU: " << (res[1] ? "Available" : "Not Available") << ", ";
+		    std::cout << "Signal: " << (res[2] ? "Available" : "Not Available") << ", ";
+		    std::cout << "Register: " << (res[3] ? "Available" : "Not Available") << ", ";
+		    std::cout << "BRAM: " << (res[4] ? "Available" : "Not Available") << ", ";
+		    std::cout << "QNetwork: " << (res[5] ? "Available" : "Not Available") << std::endl;
+		}
+};
+
+
+struct dtype {
+public:
+    uint8_t type_id;
+    std::vector<uint8_t> descriptor;
+
+    // Constructor for initializing type_id and descriptor
+    dtype(uint8_t type_id, const std::vector<uint8_t>& descriptor = {}) : type_id(type_id), descriptor(descriptor) {
+        // Set the default descriptor based on type_id if not provided
+        switch (type_id) {
+            case 0: // bool
+                this->descriptor = {};
+                break;
+            case 1: // uint
+            case 2: // signed integer
+                if (descriptor.empty()) {
+                    this->descriptor = {32}; // Default to 32 bits if not specified
+                }
+                break;
+            case 3: // float
+                if (descriptor.empty()) {
+                    // Default to 32-bit float with 8 bits for exponent and 23 bits for mantissa
+                    this->descriptor = {8, 23};
+                }
+                break;
+            case 4: // complex
+                if ((descriptor.size() != 2 && descriptor[0] != 3) || (descriptor.size() != 3 && descriptor[0] == 3)) {
+                    std::cerr << "Error: Invalid descriptor for complex type. "
+                              << "Expected (type ID, bits) for integer types or (type ID, exp bits, mantissa bits) for float type.\n";
+                }
+                break;
+            default:
+                std::cerr << "Error: Invalid type_id provided.\n";
+                this->descriptor = {};
+                break;
+        }
+    }
+
+    // Function to print type information
+    void ss() const {
+        switch (type_id) {
+            case 0:
+                std::cout << "Type: bool\n";
+                break;
+            case 1:
+                std::cout << "Type: uint, Num bits: " << static_cast<int>(descriptor[0]) << "\n";
+                break;
+            case 2:
+                std::cout << "Type: signed int, Num bits: " << static_cast<int>(descriptor[0]) << "\n";
+                break;
+            case 3:
+                std::cout << "Type: float, Exponent bits: " << static_cast<int>(descriptor[0])
+                          << ", Mantissa bits: " << static_cast<int>(descriptor[1]) << "\n";
+                break;
+            case 4:
+                std::cout << "Type: complex\n";
+                if (descriptor.size() == 2) {
+                    std::cout << "Subpart type ID: " << static_cast<int>(descriptor[0]) << "\n";
+                    std::cout << "Subpart bits: " << static_cast<int>(descriptor[1]) << "\n";
+                } else if (descriptor.size() == 3) {
+                    std::cout << "Subpart type ID: " << static_cast<int>(descriptor[0]) << "\n";
+                    std::cout << "Subpart exponent bits: " << static_cast<int>(descriptor[1]) << "\n";
+                    std::cout << "Subpart mantissa bits: " << static_cast<int>(descriptor[2]) << "\n";
+                } else {
+                    std::cout << "Invalid descriptor provided for complex type.\n";
+                }
+                break;
+            default:
+                std::cout << "Unknown type\n";
+                break;
+        }
+    }
+    
+    // Method to get the number of bits
+    int get_num_bits() const {
+        switch (type_id) {
+            case 0:
+                return 1; // Boolean is typically 1 bit, but it can vary based on context
+            case 1:
+            case 2:
+                return static_cast<int>(descriptor[0]);
+            case 3:
+                return static_cast<int>(descriptor[0]) + static_cast<int>(descriptor[1]) + 1; // Including the sign bit
+            case 4:
+                if (descriptor.size() == 2) {
+                    // For complex types with integer or unsigned integer subparts
+                    return static_cast<int>(descriptor[1]) * 2; // Real + Imaginary parts
+                } else if (descriptor.size() == 3) {
+                    // For complex types with float subparts
+                    return (static_cast<int>(descriptor[1]) + static_cast<int>(descriptor[2]) + 1) * 2;
+                }
+                return 0; // Unknown or insufficient descriptor
+            default:
+                return 0; // Unknown type
+        }
+    }
+    
+    // Method to get the display name
+    std::string get_display_name() const {
+        std::ostringstream oss;
+        switch (type_id) {
+            case 0:
+                oss << "Bool";
+                break;
+            case 1:
+                oss << "UInt" << static_cast<int>(descriptor[0]);
+                break;
+            case 2:
+                oss << "Int" << static_cast<int>(descriptor[0]);
+                break;
+            case 3:
+                // Float{num_bits}E{num_exp}M{num_mantissa} standard
+                oss << "Float" << get_num_bits() << "E" << static_cast<int>(descriptor[0]) << "M" << static_cast<int>(descriptor[1]);
+                break;
+            case 4:
+                oss << "Complex of ";
+                if (descriptor.size() == 2) {
+                    uint8_t sub_type_id = descriptor[0];
+                    switch (sub_type_id) {
+                        case 1:
+                            oss << "UInt" << static_cast<int>(descriptor[1]);
+                            break;
+                        case 2:
+                            oss << "Int" << static_cast<int>(descriptor[1]);
+                            break;
+                        default:
+                            oss << "Unknown";
+                            break;
+                    }
+                } else if (descriptor.size() == 3) {
+                    if (descriptor[0] == 3) {
+                        // Float{num_bits}E{num_exp}M{num_mantissa} standard for subpart
+                        oss << "Float"
+                            << (static_cast<int>(descriptor[1]) + static_cast<int>(descriptor[2]) + 1)
+                            << "E" << static_cast<int>(descriptor[1])
+                            << "M" << static_cast<int>(descriptor[2]);
+                    } else {
+                        oss << "Unknown";
+                    }
+                } else {
+                    oss << "Unknown";
+                }
+                break;
+            default:
+                oss << "Unknown";
+                break;
+        }
+        return oss.str();
+    }
+};
+
+
+
 namespace py = pybind11;
 
 // Helper function to avoid code repetition in bindings
@@ -608,5 +861,43 @@ PYBIND11_MODULE(dscpp, m) {
         .def("ss", &LUTx_1::ss) // Added the ss method
         .def("LookUpTable", &LUTx_1::LookUpTable)  // Added the LookUpTable method
         .def("ThermoTable", &LUTx_1::ThermoTable);
+        
+    // Expose the residency struct
+    py::class_<residency>(m, "residency")
+        .def(py::init<bool, bool, bool, bool, bool, bool>(), 
+             py::arg("cpu") = true, 
+             py::arg("gpu") = false, 
+             py::arg("signal") = false, 
+             py::arg("registerRes") = false, 
+             py::arg("bram") = false, 
+             py::arg("QN") = false) // Constructor with default arguments
+        .def(py::init<const std::array<bool, 6>&>(), py::arg("initArray")) // Overloaded constructor with boolean array
+
+        .def("isCPUAvailable", &residency::isCPUAvailable)     // Query method for CPU availability
+        .def("isGPUAvailable", &residency::isGPUAvailable)     // Query method for GPU availability
+        .def("isSignalAvailable", &residency::isSignalAvailable)   // Query method for Signal availability
+        .def("isRegisterAvailable", &residency::isRegisterAvailable)   // Query method for Register availability
+        .def("isBRAMAvailable", &residency::isBRAMAvailable)   // Query method for BRAM availability
+        .def("isQNetworkAvailable", &residency::isQNetworkAvailable) // Query method for QNetwork availability
+
+        .def("setCPUAvailability", &residency::setCPUAvailability, py::arg("available")) // Setter for CPU availability
+        .def("setGPUAvailability", &residency::setGPUAvailability, py::arg("available")) // Setter for GPU availability
+        .def("setSignalAvailability", &residency::setSignalAvailability, py::arg("available")) // Setter for Signal availability
+        .def("setRegisterAvailability", &residency::setRegisterAvailability, py::arg("available")) // Setter for Register availability
+        .def("setBRAMAvailability", &residency::setBRAMAvailability, py::arg("available")) // Setter for BRAM availability
+        .def("setQNetworkAvailability", &residency::setQNetworkAvailability, py::arg("available")) // Setter for QNetwork availability
+
+        .def("toBoolArray", &residency::toBoolArray) // Method to export the state as a boolean array
+        .def("ss", &residency::ss); // Method to display the state of resources
+
+
+    // Expose the dtype class
+    py::class_<dtype>(m, "dtype")
+        .def(py::init<uint8_t, const std::vector<uint8_t>&>(), py::arg("type_id"), py::arg("descriptor") = std::vector<uint8_t>())
+        .def_readwrite("type_id", &dtype::type_id)
+        .def_readwrite("descriptor", &dtype::descriptor)
+        .def("ss", &dtype::ss)
+        .def("__repr__", &dtype::get_display_name)
+        .def("get_num_bits", &dtype::get_num_bits);
 }
 
