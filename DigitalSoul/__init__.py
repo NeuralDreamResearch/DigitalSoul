@@ -7,7 +7,7 @@ import graphviz
 
 
 version="1.2-dev"
-UUID="00007"
+UUID="00008"
 tf_available=False
 
 print(f"Dev UUID : {UUID}")
@@ -256,8 +256,7 @@ class Edge(DigitalSoul.dscpp.residency):
     def compute_request(self, backend):
         if self.sculk[backend]==None:
             self.pre.execute(backend)
-        
-        
+            
 
 class Node(DigitalSoul.dscpp.residency):     
     def __init__(self, ops={"np":None, "cp":None, "tf":None, "vhdl":None,"qc":None},residency=residency(),name=None):
@@ -327,17 +326,18 @@ class Node(DigitalSoul.dscpp.residency):
 
         for pre in self.__in_terminals:
             args.append(pre.sculk[backend])
+        
 
-
+        result=self.__ops[backend](*args)
         for i in range(len(self.__out_terminals)):
-            self.__out_terminals[i].sculk[backend]=self.__ops[backend][i](*args)
+            self.__out_terminals[i].sculk[backend]=result[i]
 
         
         
         
 
 class ComputationalGraph(object):
-    def __init__(self,nodes,edges):
+    def __init__(self,nodes,edges,name=None):
         self.nodes=nodes
         self.edges=edges
         self.graphiz_graph= graphviz.Digraph(comment='Computational Graph')
@@ -358,3 +358,22 @@ class ComputationalGraph(object):
             
     def render(self,view):
         self.graphiz_graph.render('example_graph', format='svg', view=view)
+        
+    def generate(self,target="VHDL"):
+        if target.upper()=="VHDL":
+            code="""library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;"""
+            print(code)
+    
+        
+        
+            
+            
+            
+            
+            
+            
+            
+            
+            
