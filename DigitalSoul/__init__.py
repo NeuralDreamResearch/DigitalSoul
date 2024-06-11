@@ -7,7 +7,7 @@ import graphviz
 
 
 version="1.2-dev"
-UUID="00008"
+UUID="00007"
 tf_available=False
 
 print(f"Dev UUID : {UUID}")
@@ -355,6 +355,31 @@ class ComputationalGraph(object):
             elif j.pre!=None and j.post==None:
                 self.graphiz_graph.node(j.name, j.name)
                 self.graphiz_graph.edge(j.pre.name, j.name, j.name)
+                
+    def memory_layout(self):
+        num_bits=[0,0,0] # BRAM, Reg, Signal
+        for edge in self.edges:
+            if edge.isBRAMAvailable():
+                if edge.shape==None:
+                    num_bits[0]+=edge.get_num_bits()
+                else:
+                    num_bits[0]+=np.prod(edge.shape)*edge.get_num_bits()
+                    
+            elif edge.isRegisterAvailable():
+                if edge.shape==None:
+                    num_bits[1]+=edge.get_num_bits()
+                else:
+                    num_bits[1]+=np.prod(edge.shape)*edge.get_num_bits()
+            
+            elif edge.isSignalAvailable():
+                if edge.shape==None:
+                    num_bits[2]+=edge.get_num_bits()
+                else:
+                    num_bits[2]+=np.prod(edge.shape)*edge.get_num_bits()
+
+        return num_bits
+     
+               
             
     def render(self,view):
         self.graphiz_graph.render('example_graph', format='svg', view=view)
@@ -365,15 +390,4 @@ class ComputationalGraph(object):
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;"""
             print(code)
-    
-        
-        
-            
-            
-            
-            
-            
-            
-            
-            
             
