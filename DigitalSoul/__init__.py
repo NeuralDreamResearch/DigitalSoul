@@ -12,9 +12,10 @@ tf_available=False
 
 print(f"Dev UUID : {UUID}")
 try:
-    import tensorflow as tf
+    #import tensorflow as tf
     print("Tensorflow is available")
     tf_available=True
+    tf=np
 except:
     print("Tensorflow is skipped")
     tf=np    
@@ -197,7 +198,7 @@ class Edge(DigitalSoul.dscpp.residency):
         
         self.sculk={}
         if self.isCPUAvailable():
-            if value!=None:
+            if not( value is None):
                 self.sculk["np"]=np.array(value)
             else:
                 self.sculk["np"]=None
@@ -253,7 +254,7 @@ class Edge(DigitalSoul.dscpp.residency):
         self.post=post
         
     def compute_request(self, backend):
-        if self.sculk[backend]==None:
+        if self.sculk[backend] is None:
             self.pre.execute(backend)
     
     @property
@@ -394,7 +395,9 @@ class ComputationalGraph(object):
                     num_bits[2]+=np.prod(edge.shape)*edge.get_num_bits()
 
         return num_bits
-          
+     
+               
+            
     def render(self,view):
         self.graphiz_graph.render('example_graph', format='svg', view=view)
         
@@ -407,5 +410,5 @@ class ComputationalGraph(object):
             code="""library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;"""
-            print(code)
+
             
