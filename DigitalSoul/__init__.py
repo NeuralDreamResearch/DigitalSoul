@@ -15,7 +15,6 @@ try:
     import tensorflow as tf
     print("Tensorflow is available")
     tf_available=True
-
 except:
     print("Tensorflow is skipped")
     tf=np    
@@ -256,7 +255,20 @@ class Edge(DigitalSoul.dscpp.residency):
     def compute_request(self, backend):
         if self.sculk[backend]==None:
             self.pre.execute(backend)
+    
+    @property
+    def entropy(self):
+        isNone=True
+        for arr in self.sculk.values():
+            if arr!=None: isNone=False
             
+        if isNone:
+            if self.shape==None:
+                return self.dtype.get_num_bits()
+            else:
+                return self.dtype.get_num_bits()*np.prod(self.shape)
+        else:
+            return 0
 
 class Node(DigitalSoul.dscpp.residency):     
     def __init__(self, ops={"np":None, "cp":None, "tf":None, "vhdl":None,"qc":None},residency=residency(),name=None):
@@ -340,6 +352,8 @@ class ComputationalGraph(object):
     def __init__(self,nodes,edges,name=None):
         self.nodes=nodes
         self.edges=edges
+        self.starts=[]
+        self.ends=[]
         self.graphiz_graph= graphviz.Digraph(comment='Computational Graph')
         self.graphify()
         
@@ -350,9 +364,11 @@ class ComputationalGraph(object):
             if j.pre!=None and j.post!=None:
                 self.graphiz_graph.edge(j.pre.name, j.post.name, j.name)
             elif j.pre==None and j.post!=None:
+                self.starts.append(j)
                 self.graphiz_graph.node(j.name, j.name)
                 self.graphiz_graph.edge(j.name, j.post.name, j.name)
             elif j.pre!=None and j.post==None:
+                self.ends.append(j)
                 self.graphiz_graph.node(j.name, j.name)
                 self.graphiz_graph.edge(j.pre.name, j.name, j.name)
                 
@@ -378,11 +394,13 @@ class ComputationalGraph(object):
                     num_bits[2]+=np.prod(edge.shape)*edge.get_num_bits()
 
         return num_bits
-     
-               
-            
+          
     def render(self,view):
         self.graphiz_graph.render('example_graph', format='svg', view=view)
+        
+    def execute(self,backend):
+        for end in self.ends:
+            end.compute_request(backend)
         
     def generate(self,target="VHDL"):
         if target.upper()=="VHDL":
