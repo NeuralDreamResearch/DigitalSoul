@@ -790,6 +790,26 @@ public:
         }
         return oss.str();
     }
+    
+    std::string vhdl_descriptor() const
+    {
+        switch(this->type_id)
+        {
+            case 0:
+                return "std_logic";
+                break;
+            case 1:
+                return "unsigned("+std::to_string(this->descriptor[0] -1)+" downto 0)";
+                break;
+            case 2:
+                return "signed("+std::to_string(this->descriptor[0] -1)+" downto 0)";
+                break;
+            case 3:
+                return "std_logic_vector("+std::to_string(this->get_num_bits())+" downto 0)";
+                break;
+        }
+    
+    }
 };
 
 
@@ -898,6 +918,8 @@ PYBIND11_MODULE(dscpp, m) {
         .def_readwrite("descriptor", &dtype::descriptor)
         .def("ss", &dtype::ss)
         .def("__repr__", &dtype::get_display_name)
-        .def("get_num_bits", &dtype::get_num_bits);
+        .def("get_num_bits", &dtype::get_num_bits)
+        .def("vhdl_descriptor", &dtype::vhdl_descriptor);
+
 }
 
