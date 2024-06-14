@@ -7,7 +7,7 @@ import graphviz
 
 
 version="1.2-dev"
-UUID="00007"
+UUID="00008"
 tf_available=False
 
 print(f"Dev UUID : {UUID}")
@@ -344,6 +344,19 @@ class Node(DigitalSoul.dscpp.residency):
         result=self.__ops[backend](*args)
         for i in range(len(self.__out_terminals)):
             self.__out_terminals[i].sculk[backend]=result[i]
+            
+    def vhdl_descriptor(self):
+        code=""
+        if self.__ops["vhdl_class"]==0:
+            args = []
+
+            for pre in self.__in_terminals:
+                args.append(pre.name)
+
+            for i in range(len(self.__out_terminals)):
+                code+=f"\t{self.__out_terminals[i].name} <= {self.__ops['vhdl'](*args)[i]};\n"
+                
+            return code
 
         
         
@@ -357,6 +370,7 @@ class ComputationalGraph(object):
         self.ends=[]
         self.graphiz_graph= graphviz.Digraph(comment='Computational Graph')
         self.graphify()
+        self.name=str(name)
         
     def graphify(self):
         for i in self.nodes:
@@ -409,6 +423,19 @@ class ComputationalGraph(object):
         if target.upper()=="VHDL":
             code="""library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;"""
-
-            
+use IEEE.NUMERIC_STD.ALL;\n"""
+            code+="entity "+self.name+" is\nPort(\n"
+            for interm in self.starts:
+                code+=f"\t{interm.name}: in {interm.dtype.vhdl_descriptor()};\n"
+            for outterm in self.ends[:-1]:
+                code+=f"\t{outterm.name}: out {outterm.dtype.vhdl_descriptor()};\n"
+            code+=f"\t{self.ends[-1].name}: out {self.ends[-1].dtype.vhdl_descriptor()}\n"
+            code+=f");\nend {self.name};\narchitecture Behavioral of {self.name} is\n"
+            for inter_node in set(self.edges)-set(self.starts)-set(self.ends):
+                if inter_node.isSignalAvailable():
+                    code+=f"\tsignal {inter_node.name}:{inter_node.dtype.vhdl_descriptor()};\n"
+            code+="begin\n"
+            for node in self.nodes:
+                code+=node.vhdl_descriptor()
+            code+="end architecture Behavioral;"
+            return code
