@@ -272,9 +272,27 @@ class Edge(DigitalSoul.dscpp.residency):
             return 0
 
 class Node(DigitalSoul.dscpp.residency):     
-    def __init__(self, ops={"np":None, "cp":None, "tf":None, "vhdl":None,"qc":None},residency=residency(),name=None):
-        if name==None:
+    def __init__(self, in_terminals, out_terminals, ops={"np":None, "cp":None, "tf":None, "vhdl":None,"qc":None},residency=residency(1,signal=1),name=None):
         
+        if residency==None:super().__init__(*DigitalSoul.dscpp.residency.toBoolArray())
+            
+        elif isinstance(residency, DigitalSoul.dscpp.residency): super().__init__(*residency.toBoolArray())
+        
+        for terminal in in_terminals:
+            if Edge not in type(terminal).mro():
+                raise TypeError("in_terminals should be an array of Edges")
+            if not self.toBoolArray()== terminal.toBoolArray():
+                raise ValueError("both Edge and Node should have same residency")
+            terminal.register_post(self)
+        
+        for terminal in out_terminals:
+            if Edge not in type(terminal).mro():
+                raise TypeError("out_terminals should be an array of Edges")
+            terminal.register_pre(self)
+            
+        self.__in_terminals=in_terminals
+        self.__out_terminals=out_terminals
+        if name==None:
             self.name="DS_UUID_"+str(id(self))
         elif not isinstance(name, str):
             raise TypeError("name should be a string")
@@ -292,26 +310,8 @@ class Node(DigitalSoul.dscpp.residency):
         elif isinstance(residency, DigitalSoul.dscpp.residency): super().__init__(*residency.toBoolArray())
         
         self.__ops=ops
-        
 
-    def __call__(self,in_terminals, out_terminals):
-        for terminal in in_terminals:
-            if Edge not in type(terminal).mro():
-                raise TypeError("in_terminals should be an array of Edges")
-            if not self.toBoolArray()== terminal.toBoolArray():
-                print("OK")
-                raise ValueError("both Edge and Node should have same residency")
-            terminal.register_post(self)
-        
-        for terminal in out_terminals:
-            if Edge not in type(terminal).mro():
-                raise TypeError("out_terminals should be an array of Edges")
-            terminal.register_pre(self)
-            
-        self.__in_terminals=in_terminals
-        self.__out_terminals=out_terminals
-                
-        
+
         
     def __del__(self):
         namespace.remove(self.name)
@@ -357,15 +357,40 @@ class Node(DigitalSoul.dscpp.residency):
                 code+=f"\t{self.__out_terminals[i].name} <= {self.__ops['vhdl'](*args)[i]};\n"
                 
             return code
+        
+    @property
+    def in_terminals(self):
+        return self.__in_terminals
+        
+    @property
+    def out_terminals(self):
+        return self.__out_terminals        
 
+class ProductionNode(object):
+    count=0
+    def __init__(self,  ops={"np":None, "cp":None, "tf":None, "vhdl":None,"qc":None},residency=residency(1, signal=True),super_name=None):
+        self.__ops=ops
+        self.__super_name=super_name
+        self.residency=residency
+    
+    def __call__(self, in_terminals, out_terminals):
+        ProductionNode.count+=1
+        return Node(in_terminals,out_terminals,self.__ops,self.residency,self.__super_name+str(ProductionNode.count-1))
         
-        
-        
-
 class ComputationalGraph(object):
-    def __init__(self,nodes,edges,name=None):
+    def __init__(self,nodes,edges=None,name=None):
         self.nodes=nodes
-        self.edges=edges
+        self.edges=None
+        if not(edges is None):
+            self.edges=edges
+        else:
+            self.edges=set()
+            for node in self.nodes:
+                for edge in node.in_terminals:
+                    self.edges.add(edge)
+                for edge in node.out_terminals:
+                    self.edges.add(edge)
+
         self.starts=[]
         self.ends=[]
         self.graphiz_graph= graphviz.Digraph(comment='Computational Graph')
@@ -409,9 +434,7 @@ class ComputationalGraph(object):
                     num_bits[2]+=np.prod(edge.shape)*edge.get_num_bits()
 
         return num_bits
-     
-               
-            
+      
     def render(self,view):
         self.graphiz_graph.render('example_graph', format='svg', view=view)
         
